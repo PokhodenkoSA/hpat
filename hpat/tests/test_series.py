@@ -4,6 +4,7 @@ import pandas as pd
 import numpy as np
 import pyarrow.parquet as pq
 import hpat
+import numba
 from hpat.tests.test_utils import (
     count_array_REPs, count_parfor_REPs, count_array_OneDs, get_start_end)
 
@@ -66,9 +67,19 @@ class TestSeries(unittest.TestCase):
 
     def test_create1(self):
         def test_impl():
+            # a = 2
+            # b = 3
+            # return a + b
             df = pd.DataFrame({'A': [1, 2, 3]})
             return (df.A == 1).sum()
-        hpat_func = hpat.jit(test_impl)
+        # hpat_func = numba.njit(test_impl)
+        # hpat_func = hpat.jit(test_impl)
+        options = {}
+
+        options['nopython'] = True
+
+        # hpat_func = numba.jit(test_impl, pipeline_class=numba.compiler.Compiler, **options)
+        hpat_func = numba.jit(test_impl, pipeline_class=hpat.compiler.HPATPipeline, **options)
 
         self.assertEqual(hpat_func(), test_impl())
 

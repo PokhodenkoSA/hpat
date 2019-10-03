@@ -8,6 +8,8 @@ from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs,
                                    count_parfor_OneDs, count_array_OneDs, dist_IR_contains,
                                    get_start_end)
 
+from numba.special import literally
+
 
 _pivot_df1 = pd.DataFrame({"A": ["foo", "foo", "foo", "foo", "foo",
                                  "bar", "bar", "bar", "bar"],
@@ -384,6 +386,26 @@ class TestGroupBy(unittest.TestCase):
         hpat_func = hpat.jit(
             pivots={'pt': ['small', 'large']})(test_impl)
         self.assertEqual(hpat_func(), test_impl())
+
+    def test_df_nonliteral(self):
+        @hpat.jit
+        def group_by(df, column, target):
+            children = df[[column, target]].groupby(column)
+            return children
+
+        @hpat.jit
+        def test_impl(target):
+            df = pd.DataFrame({'A': [0, 0, 1, 1, 2, 2, 3, 3],
+                               'B': ['a', 'b', 'c', 'd', 'a', 'b', 'c', 'd'],
+                               'C': [0, 1, 2, 3, 4, 5, 6, 7]})
+
+            for c in ('A', 'B', 'C'):
+                if c == target:
+                    continue
+                group_by(df, c, target)
+
+        test_impl('A')
+
 
 
 if __name__ == "__main__":

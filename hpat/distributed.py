@@ -41,6 +41,8 @@ from numba.parfor import (
     wrap_parfor_blocks,
     unwrap_parfor_blocks)
 
+from numba.compiler_machinery import FunctionPass, register_pass
+
 import hpat
 import hpat.utils
 from hpat import distributed_api, distributed_lower
@@ -71,19 +73,13 @@ distributed_run_extensions = {}
 dist_analysis = None
 fir_text = None
 
-
-class DistributedPass(object):
+@register_pass(mutates_CFG=True, analysis_only=False)
+class DistributedPass(FunctionPass):
     """analyze program and transfrom to distributed"""
 
-    def __init__(self, func_ir, typingctx, targetctx, typemap, calltypes,
-                 metadata):
-        self.func_ir = func_ir
-        self.typingctx = typingctx
-        self.targetctx = targetctx
-        self.typemap = typemap
-        self.calltypes = calltypes
-        self.metadata = metadata
+    _name = "distributed_pass"
 
+    def __init__(self):
         self._dist_analysis = None
         self._T_arrs = None  # set of transposed arrays (taken from analysis)
 
@@ -104,15 +100,16 @@ class DistributedPass(object):
         # size for 1DVar allocs and parfors
         self.oneDVar_len_vars = {}
 
-    def run(self):
-        remove_dels(self.func_ir.blocks)
-        dprint_func_ir(self.func_ir, "starting distributed pass")
-        self.func_ir._definitions = build_definitions(self.func_ir.blocks)
+    def run_pass(self, state):
+        self.state = state
+        remove_dels(self.state.func_ir.blocks)
+        dprint_func_ir(self.state.func_ir, "starting distributed pass")
+        self.state.func_ir._definitions = build_definitions(self.state.func_ir.blocks)
         dist_analysis_pass = DistributedAnalysis(
-            self.func_ir, self.typemap, self.calltypes, self.typingctx,
-            self.metadata)
-        self._dist_analysis = dist_analysis_pass.run()
-        # dprint_func_ir(self.func_ir, "after analysis distributed")
+            self.state.func_ir, self.state.typemap, self.state.calltypes, self.state.typingctx,
+            self.state.metadata)
+        self._dist_analysis = dist_analysis_pass.run_pass(state)
+        # dprint_func_ir(self.state.func_ir, "after analysis distributed")
 
         self._T_arrs = dist_analysis_pass._T_arrs
         self._parallel_accesses = dist_analysis_pass._parallel_accesses
@@ -120,20 +117,20 @@ class DistributedPass(object):
             print("distributions: ", self._dist_analysis)
 
         self._gen_dist_inits()
-        self.func_ir._definitions = build_definitions(self.func_ir.blocks)
-        self.func_ir.blocks = self._run_dist_pass(self.func_ir.blocks)
-        self.func_ir.blocks = self._dist_prints(self.func_ir.blocks)
-        remove_dead(self.func_ir.blocks, self.func_ir.arg_names, self.func_ir, self.typemap)
-        dprint_func_ir(self.func_ir, "after distributed pass")
+        self.state.func_ir._definitions = build_definitions(self.state.func_ir.blocks)
+        self.state.func_ir.blocks = self._run_dist_pass(self.state.func_ir.blocks)
+        self.state.func_ir.blocks = self._dist_prints(self.state.func_ir.blocks)
+        remove_dead(self.state.func_ir.blocks, self.state.func_ir.arg_names, self.state.func_ir, self.typemap)
+        dprint_func_ir(self.state.func_ir, "after distributed pass")
         lower_parfor_sequential(
-            self.typingctx, self.func_ir, self.typemap, self.calltypes)
+            self.state.typingctx, self.state.func_ir, self.state.typemap, self.state.calltypes)
         if hpat.multithread_mode:
             # parfor params need to be updated for multithread_mode since some
             # new variables like alloc_start are introduced by distributed pass
             # and are used in later parfors
             parfor_ids = get_parfor_params(
-                self.func_ir.blocks, True, defaultdict(list))
-        post_proc = postproc.PostProcessor(self.func_ir)
+                self.state.func_ir.blocks, True, defaultdict(list))
+        post_proc = postproc.PostProcessor(self.state.func_ir)
         post_proc.run()
 
         # save data for debug and test
@@ -141,9 +138,11 @@ class DistributedPass(object):
         dist_analysis = self._dist_analysis
         import io
         str_io = io.StringIO()
-        self.func_ir.dump(str_io)
+        self.state.func_ir.dump(str_io)
         fir_text = str_io.getvalue()
         str_io.close()
+
+        return True
 
     def _run_dist_pass(self, blocks):
         topo_order = find_topo_order(blocks)
@@ -164,7 +163,7 @@ class DistributedPass(object):
                     out_nodes = self._run_parfor(inst, namevar_table)
                     # run dist pass recursively
                     p_blocks = wrap_parfor_blocks(inst)
-                    # build_definitions(p_blocks, self.func_ir._definitions)
+                    # build_definitions(p_blocks, self.state.func_ir._definitions)
                     self._run_dist_pass(p_blocks)
                     unwrap_parfor_blocks(inst)
                 elif isinstance(inst, ir.Assign):
@@ -215,7 +214,7 @@ class DistributedPass(object):
                     block.body = new_body + block.body[i:]
                     # TODO: use Parfor loop blocks when replacing funcs in
                     # parfor loop body
-                    inline_closure_call(self.func_ir, rp_func.glbls,
+                    inline_closure_call(self.state.func_ir, rp_func.glbls,
                                         block, len(new_body), rp_func.func, self.typingctx,
                                         rp_func.arg_types,
                                         self.typemap, self.calltypes, work_list)
@@ -324,8 +323,8 @@ class DistributedPass(object):
 
     def _gen_dist_inits(self):
         # add initializations
-        topo_order = find_topo_order(self.func_ir.blocks)
-        first_block = self.func_ir.blocks[topo_order[0]]
+        topo_order = find_topo_order(self.state.func_ir.blocks)
+        first_block = self.state.func_ir.blocks[topo_order[0]]
         # set scope and loc of generated code to the first variable in block
         scope = first_block.scope
         loc = first_block.loc
@@ -387,7 +386,7 @@ class DistributedPass(object):
 
         func_name = ""
         func_mod = ""
-        fdef = guard(find_callname, self.func_ir, rhs, self.typemap)
+        fdef = guard(find_callname, self.state.func_ir, rhs, self.typemap)
         if fdef is None:
             # FIXME: since parfors are transformed and then processed
             # recursively, some funcs don't have definitions. The generated
@@ -780,8 +779,8 @@ class DistributedPass(object):
         if fdef == ('convert_rec_to_tup', 'hpat.hiframes.api'):
             # optimize Series back to back map pattern with tuples
             # TODO: create another optimization pass?
-            arg_def = guard(get_definition, self.func_ir, rhs.args[0])
-            if (is_call(arg_def) and guard(find_callname, self.func_ir, arg_def)
+            arg_def = guard(get_definition, self.state.func_ir, rhs.args[0])
+            if (is_call(arg_def) and guard(find_callname, self.state.func_ir, arg_def)
                     == ('convert_tup_to_rec', 'hpat.hiframes.api')):
                 assign.value = arg_def.args[0]
             return out
@@ -829,7 +828,7 @@ class DistributedPass(object):
         # output of mnb.predict is 1D with same size as 1st dimension of input
         # TODO: remove ml module and use new DAAL API
         if func_name == 'predict':
-            getattr_call = guard(get_definition, self.func_ir, func_var)
+            getattr_call = guard(get_definition, self.state.func_ir, func_var)
             if (getattr_call and self.typemap[getattr_call.value.name] == hpat.ml.naive_bayes.mnb_type):
                 in_arr = rhs.args[0].name
                 self._array_starts[lhs] = [self._array_starts[in_arr][0]]
@@ -916,7 +915,7 @@ class DistributedPass(object):
 
         # sum over the first axis is distributed, A.sum(0)
         if func_name == 'sum' and len(args) == 2:
-            axis_def = guard(get_definition, self.func_ir, args[1])
+            axis_def = guard(get_definition, self.state.func_ir, args[1])
             if isinstance(axis_def, ir.Const) and axis_def.value == 0:
                 reduce_op = Reduce_Type.Sum
                 reduce_var = assign.target
@@ -927,7 +926,7 @@ class DistributedPass(object):
 
         if func_name == 'stack' and self._is_1D_arr(lhs):
             # TODO: generalize
-            in_arrs, _ = guard(find_build_sequence, self.func_ir, args[0])
+            in_arrs, _ = guard(find_build_sequence, self.state.func_ir, args[0])
             arr0 = in_arrs[0].name
             self._array_starts[lhs] = [self._array_starts[arr0][0], None]
             self._array_counts[lhs] = [self._array_counts[arr0][0], None]
@@ -945,7 +944,7 @@ class DistributedPass(object):
 
         # HACK support A.reshape(n, 1) for 1D_Var
         if func_name == 'reshape' and self._is_1D_Var_arr(arr.name):
-            assert len(args) == 2 and guard(find_const, self.func_ir, args[1]) == 1
+            assert len(args) == 2 and guard(find_const, self.state.func_ir, args[1]) == 1
             assert args[0].name in self.oneDVar_len_vars
             size_var = args[0]
             out, new_size_var = self._fix_1D_Var_alloc(size_var, lhs, assign.target.scope, assign.loc)
@@ -1182,7 +1181,7 @@ class DistributedPass(object):
         out, new_local_shape_var = self._run_alloc(new_shape, lhs.name, scope, loc)
         # get actual tuple for mk_alloc
         if len(args) != 1:
-            sh_list = guard(find_build_tuple, self.func_ir, new_local_shape_var)
+            sh_list = guard(find_build_tuple, self.state.func_ir, new_local_shape_var)
             assert sh_list is not None, "invalid shape in reshape"
             new_local_shape_var = tuple(sh_list)
         dtype = self.typemap[in_arr.name].dtype
@@ -1313,7 +1312,7 @@ class DistributedPass(object):
         if isinstance(size_var, ir.Var):
             # see if size_var is a 1D array's shape
             # it is already the local size, no need to transform
-            var_def = guard(get_definition, self.func_ir, size_var)
+            var_def = guard(get_definition, self.state.func_ir, size_var)
             oned_varnames = set(v for v in self._dist_analysis.array_dists
                                 if self._dist_analysis.array_dists[v] == Distribution.OneD)
             if (isinstance(var_def, ir.Expr) and var_def.op == 'getattr'
@@ -1348,7 +1347,7 @@ class DistributedPass(object):
         tuple_call = ir.Expr.build_tuple(new_size_list, loc)
         tuple_assign = ir.Assign(tuple_call, tuple_var, loc)
         out.append(tuple_assign)
-        self.func_ir._definitions[tuple_var.name] = [tuple_call]
+        self.state.func_ir._definitions[tuple_var.name] = [tuple_call]
         self._array_starts[lhs] = [self._set0_var] * ndims
         self._array_starts[lhs][0] = start_var
         self._array_counts[lhs] = new_size_list
@@ -1385,7 +1384,7 @@ class DistributedPass(object):
         if isinstance(size_var, ir.Var):
             # see if size_var is a 1D_Var array's shape
             # it is already the local size, no need to transform
-            var_def = guard(get_definition, self.func_ir, size_var)
+            var_def = guard(get_definition, self.state.func_ir, size_var)
             oned_var_varnames = set(v for v in self._dist_analysis.array_dists
                                     if self._dist_analysis.array_dists[v] == Distribution.OneD_Var)
             if (isinstance(var_def, ir.Expr) and var_def.op == 'getattr'
@@ -1423,7 +1422,7 @@ class DistributedPass(object):
         tuple_call = ir.Expr.build_tuple(new_size_list, loc)
         tuple_assign = ir.Assign(tuple_call, tuple_var, loc)
         out.append(tuple_assign)
-        self.func_ir._definitions[tuple_var.name] = [tuple_call]
+        self.state.func_ir._definitions[tuple_var.name] = [tuple_call]
         return out, tuple_var
 
     # new_body += self._run_1D_array_shape(
@@ -1497,7 +1496,7 @@ class DistributedPass(object):
                 out = sub_nodes
                 _set_getsetitem_index(node, sub_nodes[-1].target)
             else:
-                index_list = guard(find_build_tuple, self.func_ir, index_var)
+                index_list = guard(find_build_tuple, self.state.func_ir, index_var)
                 assert index_list is not None
                 sub_nodes = self._get_ind_sub(
                     index_list[0], self._array_starts[arr.name][0])
@@ -1516,13 +1515,13 @@ class DistributedPass(object):
         elif self._is_1D_arr(arr.name) and isinstance(node, (ir.StaticSetItem, ir.SetItem)):
             is_multi_dim = False
             # we only consider 1st dimension for multi-dim arrays
-            inds = guard(find_build_tuple, self.func_ir, index_var)
+            inds = guard(find_build_tuple, self.state.func_ir, index_var)
             if inds is not None:
                 index_var = inds[0]
                 is_multi_dim = True
 
             # no need for transformation for whole slices
-            if guard(is_whole_slice, self.typemap, self.func_ir, index_var):
+            if guard(is_whole_slice, self.typemap, self.state.func_ir, index_var):
                 return out
 
             # TODO: support multi-dim slice setitem like X[a:b, c:d]
@@ -1548,7 +1547,7 @@ class DistributedPass(object):
                     start, stop, chunk_start, chunk_count)
                 A[loc_start:loc_stop] = val
 
-            slice_call = get_definition(self.func_ir, index_var)
+            slice_call = get_definition(self.state.func_ir, index_var)
             slice_start = slice_call.args[0]
             slice_stop = slice_call.args[1]
             return self._replace_func(
@@ -1579,14 +1578,14 @@ class DistributedPass(object):
             lhs = full_node.target
 
             # we only consider 1st dimension for multi-dim arrays
-            inds = guard(find_build_tuple, self.func_ir, index_var)
+            inds = guard(find_build_tuple, self.state.func_ir, index_var)
             if inds is not None:
                 index_var = inds[0]
                 is_multi_dim = True
 
-            arr_def = guard(get_definition, self.func_ir, index_var)
+            arr_def = guard(get_definition, self.state.func_ir, index_var)
             if isinstance(arr_def, ir.Expr) and arr_def.op == 'call':
-                fdef = guard(find_callname, self.func_ir, arr_def, self.typemap)
+                fdef = guard(find_callname, self.state.func_ir, arr_def, self.typemap)
                 if fdef == ('permutation', 'numpy.random'):
                     self._array_starts[lhs.name] = self._array_starts[arr.name]
                     self._array_counts[lhs.name] = self._array_counts[arr.name]
@@ -1594,7 +1593,7 @@ class DistributedPass(object):
                     out = self._run_permutation_array_index(lhs, arr, index_var)
 
             # no need for transformation for whole slices
-            if guard(is_whole_slice, self.typemap, self.func_ir, index_var):
+            if guard(is_whole_slice, self.typemap, self.state.func_ir, index_var):
                 # A = X[:,3]
                 self._array_starts[lhs.name] = [self._array_starts[arr.name][0]]
                 self._array_counts[lhs.name] = [self._array_counts[arr.name][0]]
@@ -1602,14 +1601,14 @@ class DistributedPass(object):
 
             # strided whole slice
             # e.g. A = X[::2,5]
-            elif guard(is_whole_slice, self.typemap, self.func_ir, index_var, accept_stride=True):
+            elif guard(is_whole_slice, self.typemap, self.state.func_ir, index_var, accept_stride=True):
                 # FIXME: we use rebalance array to handle the output array
                 # TODO: convert to neighbor exchange
                 # on each processor, the slice has to start from an offset:
                 # |step-(start%step)|
                 in_arr = full_node.value.value
                 start = self._array_starts[in_arr.name][0]
-                step = get_slice_step(self.typemap, self.func_ir, index_var)
+                step = get_slice_step(self.typemap, self.state.func_ir, index_var)
 
                 def f(A, start, step):
                     offset = abs(step - (start % step)) % step
@@ -1628,7 +1627,7 @@ class DistributedPass(object):
                 out[-1].target = lhs
 
             elif self._is_REP(lhs.name) and guard(
-                    is_const_slice, self.typemap, self.func_ir, index_var):
+                    is_const_slice, self.typemap, self.state.func_ir, index_var):
                 # cases like S.head()
                 # bcast if all in rank 0, otherwise gatherv
                 in_arr = full_node.value.value
@@ -1817,7 +1816,7 @@ class DistributedPass(object):
         if index == other_index:
             return True
         # multi-dim case
-        tup_list = guard(find_build_tuple, self.func_ir, index)
+        tup_list = guard(find_build_tuple, self.state.func_ir, index)
         if tup_list is not None:
             index_tuple = [var.name for var in tup_list]
             if index_tuple[0] == index:
@@ -1844,7 +1843,7 @@ class DistributedPass(object):
     # def _get_var_const_val(self, var):
     #     if isinstance(var, int):
     #         return var
-    #     node = guard(get_definition, self.func_ir, var)
+    #     node = guard(get_definition, self.state.func_ir, var)
     #     if isinstance(node, ir.Const):
     #         return node.value
     #     if isinstance(node, ir.Expr):
@@ -1930,7 +1929,7 @@ class DistributedPass(object):
             args = [slice_var, offset_var]
             slice_type = self.typemap[slice_var.name]
             arg_typs = (slice_type, types.intp,)
-        _globals = self.func_ir.func_id.func.__globals__
+        _globals = self.state.func_ir.func_id.func.__globals__
         f_ir = compile_to_numba_ir(f, _globals, self.typingctx, arg_typs, self.typemap, self.calltypes)
         _, block = f_ir.blocks.popitem()
         replace_arg_nodes(block, args)
@@ -1975,10 +1974,10 @@ class DistributedPass(object):
     def _file_open_set_parallel(self, file_varname):
         var = file_varname
         while True:
-            var_def = get_definition(self.func_ir, var)
+            var_def = get_definition(self.state.func_ir, var)
             require(isinstance(var_def, ir.Expr))
             if var_def.op == 'call':
-                fdef = find_callname(self.func_ir, var_def)
+                fdef = find_callname(self.state.func_ir, var_def)
                 if (fdef[0] in ('create_dataset', 'create_group')
                         and isinstance(fdef[1], ir.Var)
                         and self.typemap[fdef[1].name] in (h5file_type, h5group_type)):
@@ -1992,7 +1991,7 @@ class DistributedPass(object):
             require(var_def.op in ('getitem', 'static_getitem'))
             var = var_def.value.name
 
-        # for label, block in self.func_ir.blocks.items():
+        # for label, block in self.state.func_ir.blocks.items():
         #     for stmt in block.body:
         #         if (isinstance(stmt, ir.Assign)
         #                 and stmt.target.name == file_varname):
@@ -2050,7 +2049,7 @@ class DistributedPass(object):
                 return Reduce_Type.Prod
 
         if rhs.op == 'call':
-            func = find_callname(self.func_ir, rhs, self.typemap)
+            func = find_callname(self.state.func_ir, rhs, self.typemap)
             if func == ('min', 'builtins'):
                 if isinstance(self.typemap[rhs.args[0].name], numba.typing.builtins.IndexValueType):
                     return Reduce_Type.Argmin
@@ -2108,7 +2107,7 @@ class DistributedPass(object):
         """ get the list of variables that hold values in the tuple variable.
         add node to out if code generation needed.
         """
-        t_list = guard(find_build_tuple, self.func_ir, tup_var)
+        t_list = guard(find_build_tuple, self.state.func_ir, tup_var)
         if t_list is not None:
             return t_list
         assert isinstance(self.typemap[tup_var.name], types.UniTuple)
@@ -2162,7 +2161,7 @@ class DistributedPass(object):
         if const:
             new_args = []
             for i, arg in enumerate(args):
-                val = guard(find_const, self.func_ir, arg)
+                val = guard(find_const, self.state.func_ir, arg)
                 if val:
                     new_args.append(types.literal(val))
                 else:
