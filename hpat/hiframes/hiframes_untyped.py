@@ -125,9 +125,9 @@ class HiFramesPass(FunctionPass):
     def run_pass(self, state):
         self.state = state
 
-        print("\nBefore:")
-        self.print_ir(self.state.func_ir)
-        print("\n\n")
+        # print("\nBefore:")
+        # self.print_ir(self.state.func_ir)
+        # print("\n\n")
 
         ir_utils._max_label = max(self.state.func_ir.blocks.keys())
 
@@ -140,7 +140,7 @@ class HiFramesPass(FunctionPass):
         dprint_func_ir(self.state.func_ir, "starting hiframes")
         self._handle_metadata()
         blocks = self.state.func_ir.blocks
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         # call build definition since rewrite pass doesn't update definitions
         # e.g. getitem to static_getitem in test_column_list_select2
         self.state.func_ir._definitions = build_definitions(blocks)
@@ -209,9 +209,9 @@ class HiFramesPass(FunctionPass):
         # while remove_dead(blocks, self.state.func_ir.arg_names, self.state.func_ir):
         #     pass
         self.state.func_ir._definitions = build_definitions(blocks)
-        print("\nAfter:")
-        self.print_ir(self.state.func_ir)
-        print("\n\n")
+        # print("\nAfter:")
+        # self.print_ir(self.state.func_ir)
+        # print("\n\n")
         dprint_func_ir(self.state.func_ir, "after hiframes")
         if debug_prints():  # pragma: no cover
             print("df_vars: ", self.df_vars)
