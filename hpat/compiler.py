@@ -218,7 +218,7 @@ class HPATPipeline(numba.compiler.CompilerBase):
         # pm.add_pass_after(DataFramePass, InlineInlinables)
         # pm.add_pass_after(HiFramesTypedPass, DataFramePass)
         # print(pm.passes)
-        # pm.add_pass_after(DistributedPass, ParforPass)
+        pm.add_pass_after(DistributedPass, ParforPass)
         pm.finalize()
 
         return [pm]

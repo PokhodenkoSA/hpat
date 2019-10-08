@@ -68,6 +68,9 @@ class DistributedAnalysis(object):
         self.second_pass = False
         self.in_parallel_parfor = -1
 
+    def run_pass(self, state):
+        return self.run()
+
     def run(self):
         self._init_run()
         blocks = self.func_ir.blocks
