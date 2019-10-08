@@ -94,4 +94,4 @@ def jit(signature_or_function=None, **options):
     # from .compiler import add_hpat_stages
     # return numba.jit(signature_or_function, user_pipeline_funcs=[add_hpat_stages], **options)
     # return numba.jit(signature_or_function, pipeline_class=hpat.compiler.HPATPipeline, **options)
-    return numba.jit(signature_or_function, pipeline_class=numba.compiler.Compiler, **options)
+    return numba.jit(signature_or_function, pipeline_class=hpat.compiler.HPATPipeline, **options)

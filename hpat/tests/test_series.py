@@ -73,13 +73,13 @@ class TestSeries(unittest.TestCase):
             df = pd.DataFrame({'A': [1, 2, 3]})
             return (df.A == 1).sum()
         # hpat_func = numba.njit(test_impl)
-        # hpat_func = hpat.jit(test_impl)
+        hpat_func = hpat.jit(test_impl)
         options = {}
 
         options['nopython'] = True
 
         # hpat_func = numba.jit(test_impl, pipeline_class=numba.compiler.Compiler, **options)
-        hpat_func = numba.jit(test_impl, pipeline_class=hpat.compiler.HPATPipeline, **options)
+        # hpat_func = numba.jit(test_impl, pipeline_class=hpat.compiler.HPATPipeline, **options)
 
         self.assertEqual(hpat_func(), test_impl())
 

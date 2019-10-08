@@ -22,6 +22,8 @@ import hpat.io
 if config._has_h5py:
     from hpat.io import pio
 
+from numba.compiler_machinery import FunctionPass, register_pass
+
 # workaround for Numba #3876 issue with large labels in mortgage benchmark
 binding.set_option("tmp", "-non-global-value-max-name-size=2048")
 
@@ -154,6 +156,18 @@ def inline_calls(func_ir, _locals):
     # CFG simplification fixes this case
     func_ir.blocks = ir_utils.simplify_CFG(func_ir.blocks)
 
+@register_pass(mutates_CFG=True, analysis_only=False)
+class InlinePass(FunctionPass):
+    """Analyze and transform dataframe calls after typing"""
+
+    _name = "hpat_inline_pass"
+
+    def __init__(self):
+        pass
+
+    def run_pass(self, state):
+        inline_calls(state.func_ir, state.locals)
+        return True
 
 class HPATPipeline(numba.compiler.CompilerBase):
     """HPAT compiler pipeline
@@ -195,6 +209,7 @@ class HPATPipeline(numba.compiler.CompilerBase):
             position += 1
 
         self.add_pass_in_position(pm, HiFramesPass, position + 1)
+        pm.add_pass_after(InlinePass, InlineInlinables)
         # pm.add_pass_after(HiFramesPass, InlineInlinables)
         # pm.add_pass_after(HiFramesPass, InlineInlinables)
         # pm.add_pass_after(DataFramePass, AnnotateTypes)

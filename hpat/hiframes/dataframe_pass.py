@@ -170,7 +170,7 @@ class DataFramePass(FunctionPass):
                 blocks[label].body = new_body
 
         self.state.func_ir.blocks = ir_utils.simplify_CFG(self.state.func_ir.blocks)
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         while ir_utils.remove_dead(self.state.func_ir.blocks, self.state.func_ir.arg_names,
                                    self.state.func_ir, self.state.typemap):
             pass
