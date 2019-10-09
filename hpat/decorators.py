@@ -47,6 +47,8 @@ def jit(signature_or_function=None, **options):
         return numba.jit(signature_or_function, **options)
 
     _locals = options.pop('locals', {})
+    # print("\nlocals: " + str(_locals))
+    # print('\noptions: ' + str(options))
     assert isinstance(_locals, dict)
 
     # put pivots in locals TODO: generalize numba.jit options

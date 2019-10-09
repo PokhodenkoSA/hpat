@@ -133,7 +133,7 @@ class HiFramesPass(FunctionPass):
 
         self.pq_handler = ParquetHandler(
             self.state.func_ir, self.state.typingctx, self.state.args, self.state.locals, self.reverse_copies)
-        self.h5_handler = pio.PIO(self.state.func_ir, self.state._locals, self.reverse_copies)
+        self.h5_handler = pio.PIO(self.state.func_ir, self.state.locals, self.reverse_copies)
 
         # FIXME: see why this breaks test_kmeans
         # remove_dels(self.state.func_ir.blocks)

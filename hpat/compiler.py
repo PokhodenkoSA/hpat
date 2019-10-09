@@ -202,7 +202,6 @@ class HPATPipeline(numba.compiler.CompilerBase):
         # this maintains the objmode fallback behaviour
         # if not self.state.flags.force_pyobject:
         pm = DefaultPassBuilder.define_nopython_pipeline(self.state)
-        self.state._locals = {}
 
         position = self.pass_position(pm, InlineInlinables)
         if pm.passes[position + 1][0] == DeadBranchPrune:
@@ -354,6 +353,27 @@ class HPATPipeline(numba.compiler.CompilerBase):
 #         self.add_lowering_stage(pm)
 #         self.add_cleanup_stage(pm)
 
-#     def stage_lower_parfor_seq(self):
-#         numba.parfor.lower_parfor_sequential(
-#             self.state.typingctx, self.state.func_ir, self.state.typemap, self.state.calltypes)
+#    def stage_lower_parfor_seq(self):
+#        numba.parfor.lower_parfor_sequential(
+#            self.state.typingctx, self.state.func_ir, self.state.typemap, self.state.calltypes)
+
+class HPATPipelineSeq(HPATPipeline):
+    """HPAT pipeline without the distributed pass (used in rolling kernels)
+    """
+
+    def define_pipelines(self):
+        name = 'hpat'
+
+        pm = DefaultPassBuilder.define_nopython_pipeline(self.state)
+
+        position = self.pass_position(pm, InlineInlinables)
+        if pm.passes[position + 1][0] == DeadBranchPrune:
+            position += 1
+
+        self.add_pass_in_position(pm, HiFramesPass, position + 1)
+        pm.add_pass_after(InlinePass, InlineInlinables)
+        pm.add_pass_after(DataFramePass, AnnotateTypes)
+        pm.add_pass_after(HiFramesTypedPass, DataFramePass)
+        pm.finalize()
+
+        return [pm]

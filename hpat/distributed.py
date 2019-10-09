@@ -158,7 +158,7 @@ class DistributedPass(FunctionPass):
                     f = distributed_run_extensions[type(inst)]
                     out_nodes = f(inst, self._dist_analysis.array_dists,
                                   self.state.typemap, self.state.calltypes, self.state.typingctx,
-                                  self.targetctx, self)
+                                  self.state.targetctx, self)
                 elif isinstance(inst, Parfor):
                     out_nodes = self._run_parfor(inst, namevar_table)
                     # run dist pass recursively
