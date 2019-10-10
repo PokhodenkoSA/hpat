@@ -6,7 +6,7 @@ from functools import reduce
 import copy
 import numpy as np
 import numba
-from numba import typeinfer, ir, ir_utils, config, types, compiler
+from numba import typeinfer, ir, ir_utils, config, types, compiler, typed_passes
 from numba.ir_utils import (visit_vars_inner, replace_vars_inner, remove_dead,
                             compile_to_numba_ir, replace_arg_nodes,
                             replace_vars_stmt, find_callname, guard,
@@ -1065,7 +1065,7 @@ def compile_to_optimized_ir(func, arg_typs, typingctx):
         f_ir, typingctx, arg_typs, {}, {})
     df_pass.run()
     remove_dead(f_ir.blocks, f_ir.arg_names, f_ir)
-    typemap, return_type, calltypes = compiler.type_inference_stage(
+    typemap, return_type, calltypes = typed_passes.type_inference_stage(
         typingctx, f_ir, arg_typs, None)
 
     options = numba.targets.cpu.ParallelOptions(True)
