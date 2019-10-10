@@ -1082,7 +1082,7 @@ def compile_to_optimized_ir(func, arg_typs, typingctx):
     f_ir._definitions = build_definitions(f_ir.blocks)
     df_t_pass = hpat.hiframes.hiframes_typed.HiFramesTyped(f_ir, typingctx, typemap, calltypes)
     df_t_pass.run()
-    numba.rewrites.rewrite_registry.apply('after-inference', pm, f_ir)
+    numba.rewrites.rewrite_registry.apply('after-inference', pm.state)
     parfor_pass = numba.parfor.ParforPass(f_ir, typemap,
                                           calltypes, return_type, typingctx,
                                           options, flags)
