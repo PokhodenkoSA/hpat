@@ -158,8 +158,6 @@ def inline_calls(func_ir, _locals):
 
 @register_pass(mutates_CFG=True, analysis_only=False)
 class InlinePass(FunctionPass):
-    """Analyze and transform dataframe calls after typing"""
-
     _name = "hpat_inline_pass"
 
     def __init__(self):
@@ -167,6 +165,18 @@ class InlinePass(FunctionPass):
 
     def run_pass(self, state):
         inline_calls(state.func_ir, state.locals)
+        return True
+
+@register_pass(mutates_CFG=True, analysis_only=False)
+class PostprocessorPass(FunctionPass):
+    _name = "hpat_postprocessor_pass"
+
+    def __init__(self):
+        pass
+
+    def run_pass(self, state):
+        post_proc = postproc.PostProcessor(state.func_ir)
+        post_proc.run()
         return True
 
 class HPATPipeline(numba.compiler.CompilerBase):
@@ -213,6 +223,7 @@ class HPATPipeline(numba.compiler.CompilerBase):
         # pm.add_pass_after(HiFramesPass, InlineInlinables)
         # pm.add_pass_after(DataFramePass, AnnotateTypes)
         pm.add_pass_after(DataFramePass, AnnotateTypes)
+        pm.add_pass_after(PostprocessorPass, AnnotateTypes)
         pm.add_pass_after(HiFramesTypedPass, DataFramePass)
         # pm.add_pass_after(DataFramePass, InlineInlinables)
         # pm.add_pass_after(HiFramesTypedPass, DataFramePass)
