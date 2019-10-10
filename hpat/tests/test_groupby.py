@@ -66,7 +66,6 @@ class TestGroupBy(unittest.TestCase):
         df = pd.DataFrame({'A': [2, 1, 1, 1, 2, 2, 1], 'B': [-8, 2, 3, 1, 5, 6, 7]})
         self.assertEqual(set(hpat_func(df)), set(test_impl(df)))
 
-    @unittest.skip("pending numba #3881")
     def test_agg_seq_min_date(self):
         def test_impl(df):
             df2 = df.groupby('A', as_index=False).min()
@@ -384,6 +383,16 @@ class TestGroupBy(unittest.TestCase):
         hpat_func = hpat.jit(
             pivots={'pt': ['small', 'large']})(test_impl)
         self.assertEqual(hpat_func(), test_impl())
+
+    @unittest.skip("Implement groupby(lambda) for DataFrame")
+    def test_groupby_lambda(self):
+        def test_impl(df):
+            group = df.groupby(lambda x: x % 2 == 0)
+            return group.count()
+
+        df = pd.DataFrame({'A': [2, 1, 1, 1, 2, 2, 1], 'B': [-8, 2, 3, 1, 5, 6, 7]})
+        hpat_func = hpat.jit(test_impl)
+        pd.testing.assert_frame_equal(hpat_func(df), test_impl(df))
 
 
 if __name__ == "__main__":

@@ -1146,6 +1146,37 @@ def lower_drop_dummy(context, builder, sig, args):
     return out_obj._getvalue()
 
 
+@overload_method(DataFrameType, 'isna')
+def isna_overload(df):
+
+    def _impl(df):
+        return hpat.hiframes.pd_dataframe_ext.isna_dummy(df)
+
+    return _impl
+
+
+def isna_dummy(df):
+    return df
+
+
+@infer_global(isna_dummy)
+class IsnaDummyTyper(AbstractTemplate):
+    def generic(self, args, kws):
+        assert not kws
+        df, = args
+        bool_arr = types.Array(types.bool_, 1, 'C')
+        n_cols = len(df.columns)
+        out_df = DataFrameType((bool_arr,) * n_cols, df.index, df.columns)
+        return signature(out_df, *args)
+
+
+@lower_builtin(isna_dummy, types.VarArg(types.Any))
+def lower_isna_dummy(context, builder, sig, args):
+    out_obj = cgutils.create_struct_proxy(
+        sig.return_type)(context, builder)
+    return out_obj._getvalue()
+
+
 @overload_method(DataFrameType, 'isin')
 def isin_overload(df, values):
 
@@ -1254,6 +1285,39 @@ class MeanDummyTyper(AbstractTemplate):
 
 @lower_builtin(mean_dummy, types.VarArg(types.Any))
 def lower_mean_dummy(context, builder, sig, args):
+    out_obj = cgutils.create_struct_proxy(
+        sig.return_type)(context, builder)
+    return out_obj._getvalue()
+
+
+@overload_method(DataFrameType, 'median')
+def median_overload(df, axis=None, skipna=None, level=None, numeric_only=None):
+    # TODO: kwargs
+    # TODO: avoid dummy and generate func here when inlining is possible
+    def _impl(df, axis=None, skipna=None, level=None, numeric_only=None):
+        return hpat.hiframes.pd_dataframe_ext.median_dummy(df)
+
+    return _impl
+
+
+def median_dummy(df, n):
+    return df
+
+
+@infer_global(median_dummy)
+class MedianDummyTyper(AbstractTemplate):
+    def generic(self, args, kws):
+        df = args[0]
+        # TODO: ignore non-numerics
+        # output is float64 series with column names as string index
+        out = SeriesType(
+            types.float64, types.Array(types.float64, 1, 'C'),
+            string_array_type)
+        return signature(out, *args)
+
+
+@lower_builtin(median_dummy, types.VarArg(types.Any))
+def lower_median_dummy(context, builder, sig, args):
     out_obj = cgutils.create_struct_proxy(
         sig.return_type)(context, builder)
     return out_obj._getvalue()

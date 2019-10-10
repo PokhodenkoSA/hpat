@@ -1,6 +1,8 @@
 import unittest
+import platform
 import random
 import string
+import platform
 import pandas as pd
 import numpy as np
 
@@ -10,6 +12,7 @@ from hpat.tests.test_utils import (count_array_REPs, count_parfor_REPs, count_pa
                                    count_array_OneDs, dist_IR_contains, get_start_end)
 
 from hpat.tests.gen_test_data import ParquetGenerator
+from numba.config import IS_32BITS
 
 
 @hpat.jit
@@ -58,7 +61,7 @@ class TestDataFrame(unittest.TestCase):
 
         hpat_func = hpat.jit(test_impl)
         pd.testing.assert_frame_equal(hpat_func(), test_impl())
-        
+
     def test_unbox1(self):
         def test_impl(df):
             return df.A
@@ -91,10 +94,6 @@ class TestDataFrame(unittest.TestCase):
         hpat_func = hpat.jit(test_impl)
         pd.testing.assert_frame_equal(hpat_func(df), test_impl(df))
 
-    @unittest.skip('AssertionError - fix needed\n'
-                   'Attribute "dtype" are different\n'
-                   '[left]:  int64\n'
-                   '[right]: int32\n')
     def test_box1(self):
         def test_impl(n):
             df = pd.DataFrame({'A': np.ones(n), 'B': np.arange(n)})
@@ -102,7 +101,8 @@ class TestDataFrame(unittest.TestCase):
 
         hpat_func = hpat.jit(test_impl)
         n = 11
-        pd.testing.assert_frame_equal(hpat_func(n), test_impl(n))
+        do_check = False if platform.system() == 'Windows' and not IS_32BITS else True
+        pd.testing.assert_frame_equal(hpat_func(n), test_impl(n), check_dtype=do_check)
 
     def test_box2(self):
         def test_impl():
@@ -121,6 +121,17 @@ class TestDataFrame(unittest.TestCase):
         hpat_func = hpat.jit(test_impl)
         df = pd.DataFrame({'A': ['aa', 'bb', 'cc']})
         pd.testing.assert_frame_equal(hpat_func(df), test_impl(df))
+
+    def test_box_categorical(self):
+        def test_impl(df):
+            df['A'] = df['A'] + 1
+            return df
+
+        hpat_func = hpat.jit(test_impl)
+        df = pd.DataFrame({'A': [1, 2, 3],
+                           'B': pd.Series(['N', 'Y', 'Y'],
+                                          dtype=pd.api.types.CategoricalDtype(['N', 'Y']))})
+        pd.testing.assert_frame_equal(hpat_func(df.copy(deep=True)), test_impl(df))
 
     def test_box_dist_return(self):
         def test_impl(n):
@@ -320,10 +331,6 @@ class TestDataFrame(unittest.TestCase):
         df2 = df.copy()
         pd.testing.assert_frame_equal(hpat_func(df, n), test_impl(df2, n))
 
-    @unittest.skip('AssertionError - fix needed\n'
-                   'Attribute "dtype" are different\n'
-                   '[left]:  int64\n'
-                   '[right]: int32\n')
     def test_set_column1(self):
         # set existing column
         def test_impl(n):
@@ -333,12 +340,9 @@ class TestDataFrame(unittest.TestCase):
 
         hpat_func = hpat.jit(test_impl)
         n = 11
-        pd.testing.assert_frame_equal(hpat_func(n), test_impl(n))
+        do_check = False if platform.system() == 'Windows' and not IS_32BITS else True
+        pd.testing.assert_frame_equal(hpat_func(n), test_impl(n), check_dtype=do_check)
 
-    @unittest.skip('AssertionError - fix needed\n'
-                   'Attribute "dtype" are different\n'
-                   '[left]:  int64\n'
-                   '[right]: int32\n')
     def test_set_column_reflect4(self):
         # set existing column
         def test_impl(df, n):
@@ -350,12 +354,9 @@ class TestDataFrame(unittest.TestCase):
         df2 = df1.copy()
         hpat_func(df1, n)
         test_impl(df2, n)
-        pd.testing.assert_frame_equal(df1, df2)
+        do_check = False if platform.system() == 'Windows' and not IS_32BITS else True
+        pd.testing.assert_frame_equal(df1, df2, check_dtype=do_check)
 
-    @unittest.skip('AssertionError - fix needed\n'
-                   'Attribute "dtype" are different\n'
-                   '[left]:  int64\n'
-                   '[right]: int32\n')
     def test_set_column_new_type1(self):
         # set existing column with a new type
         def test_impl(n):
@@ -365,12 +366,9 @@ class TestDataFrame(unittest.TestCase):
 
         hpat_func = hpat.jit(test_impl)
         n = 11
-        pd.testing.assert_frame_equal(hpat_func(n), test_impl(n))
+        do_check = False if platform.system() == 'Windows' and not IS_32BITS else True
+        pd.testing.assert_frame_equal(hpat_func(n), test_impl(n), check_dtype=do_check)
 
-    @unittest.skip('AssertionError - fix needed\n'
-                   'Attribute "dtype" are different\n'
-                   '[left]:  int64\n'
-                   '[right]: int32\n')
     def test_set_column2(self):
         # create new column
         def test_impl(n):
@@ -380,12 +378,9 @@ class TestDataFrame(unittest.TestCase):
 
         hpat_func = hpat.jit(test_impl)
         n = 11
-        pd.testing.assert_frame_equal(hpat_func(n), test_impl(n))
+        do_check = False if platform.system() == 'Windows' and not IS_32BITS else True
+        pd.testing.assert_frame_equal(hpat_func(n), test_impl(n), check_dtype=do_check)
 
-    @unittest.skip('AssertionError - fix needed\n'
-                   'Attribute "dtype" are different\n'
-                   '[left]:  int64\n'
-                   '[right]: int32\n')
     def test_set_column_reflect3(self):
         # create new column
         def test_impl(df, n):
@@ -397,7 +392,8 @@ class TestDataFrame(unittest.TestCase):
         df2 = df1.copy()
         hpat_func(df1, n)
         test_impl(df2, n)
-        pd.testing.assert_frame_equal(df1, df2)
+        do_check = False if platform.system() == 'Windows' and not IS_32BITS else True
+        pd.testing.assert_frame_equal(df1, df2, check_dtype=do_check)
 
     def test_set_column_bool1(self):
         def test_impl(df):
@@ -571,7 +567,6 @@ class TestDataFrame(unittest.TestCase):
         hpat_func = hpat.jit(test_impl)
         self.assertTrue((hpat_func(df) == sorted_df.B.values).all())
 
-    @unittest.skip('Error - fix needed; issue is related to __pycache__\n')
     def test_sort_parallel_single_col(self):
         # create `kde.parquet` file
         ParquetGenerator.gen_kde_pq()
@@ -594,7 +589,19 @@ class TestDataFrame(unittest.TestCase):
             # restore global val
             hpat.hiframes.sort.MIN_SAMPLES = save_min_samples
 
-    @unittest.skip('Error - fix needed; issue is related to __pycache__\n')
+    def test_df_isna1(self):
+        '''Verify DataFrame.isna implementation for various types of data'''
+        def test_impl(df):
+            return df.isna()
+        hpat_func = hpat.jit(test_impl)
+
+        # TODO: add column with datetime values when test_series_datetime_isna1 is fixed
+        df = pd.DataFrame({'A': [1.0, 2.0, np.nan, 1.0],
+                           'B': [np.inf, 5, np.nan, 6],
+                           'C': ['aa', 'b', None, 'ccc'],
+                           'D': [None, 'dd', '', None]})
+        pd.testing.assert_frame_equal(hpat_func(df), test_impl(df))
+
     def test_sort_parallel(self):
         # create `kde.parquet` file
         ParquetGenerator.gen_kde_pq()
@@ -671,11 +678,7 @@ class TestDataFrame(unittest.TestCase):
         n = 11
         self.assertEqual(hpat_func(n), test_impl(n))
 
-    @unittest.skip('numba.errors.TypingError - fix needed\n'
-                   'Failed in hpat mode pipeline'
-                   '(step: convert to distributed)\n'
-                   'Invalid use of Function(<built-in function len>)'
-                   'with argument(s) of type(s): (none)\n')
+    @unittest.skipIf(platform.system() == 'Windows', "Attribute 'dtype' are different int64 and int32")
     def test_df_head1(self):
         def test_impl(n):
             df = pd.DataFrame({'A': np.ones(n), 'B': np.arange(n)})
@@ -699,6 +702,16 @@ class TestDataFrame(unittest.TestCase):
         def test_impl(n):
             df = pd.DataFrame({'A': np.arange(n) + 1.0, 'B': np.arange(n) + 1})
             return df.mean()
+
+        hpat_func = hpat.jit(test_impl)
+        n = 11
+        pd.testing.assert_series_equal(hpat_func(n), test_impl(n))
+
+    def test_median1(self):
+        # TODO: non-numeric columns should be ignored automatically
+        def test_impl(n):
+            df = pd.DataFrame({'A': 2 ** np.arange(n), 'B': np.arange(n) + 1.0})
+            return df.median()
 
         hpat_func = hpat.jit(test_impl)
         n = 11
@@ -970,6 +983,64 @@ class TestDataFrame(unittest.TestCase):
 
         hpat_func = hpat.jit(test_impl)
         pd.testing.assert_series_equal(hpat_func(), test_impl(), check_names=False)
+
+    @unittest.skip("Implement getting columns attribute")
+    def test_dataframe_columns_attribute(self):
+        def test_impl():
+            df = pd.DataFrame({'A': [1, 2, 3], 'B': [2, 3, 4]})
+            return df.columns
+
+        hpat_func = hpat.jit(test_impl)
+        np.testing.assert_array_equal(hpat_func(), test_impl())
+
+    @unittest.skip("Implement getting columns attribute")
+    def test_dataframe_columns_iterator(self):
+        def test_impl():
+            df = pd.DataFrame({'A': [1, 2, 3], 'B': [2, 3, 4]})
+            return [column for column in df.columns]
+
+        hpat_func = hpat.jit(test_impl)
+        np.testing.assert_array_equal(hpat_func(), test_impl())
+
+    @unittest.skip("Implement set_index for DataFrame")
+    def test_dataframe_set_index(self):
+        def test_impl():
+            df = pd.DataFrame({'month': [1, 4, 7, 10],
+                               'year': [2012, 2014, 2013, 2014],
+                               'sale': [55, 40, 84, 31]})
+            return df.set_index('month')
+
+        hpat_func = hpat.jit(test_impl)
+        pd.testing.assert_frame_equal(hpat_func(), test_impl())
+
+    @unittest.skip("Implement sort_index for DataFrame")
+    def test_dataframe_sort_index(self):
+        def test_impl():
+            df = pd.DataFrame({'A': [1, 2, 3, 4, 5]}, index=[100, 29, 234, 1, 150])
+            return df.sort_index()
+
+        hpat_func = hpat.jit(test_impl)
+        pd.testing.assert_frame_equal(hpat_func(), test_impl())
+
+    @unittest.skip("Implement iterrows for DataFrame")
+    def test_dataframe_iterrows(self):
+        def test_impl(df):
+            print(df.iterrows())
+            return [row for _, row in df.iterrows()]
+
+        df = pd.DataFrame({'A': [1, 2, 3], 'B': [0.2, 0.5, 0.001], 'C': ['a', 'bb', 'ccc']})
+        hpat_func = hpat.jit(test_impl)
+        np.testing.assert_array_equal(hpat_func(df), test_impl(df))
+
+    @unittest.skip("Support parameter axis=1")
+    def test_dataframe_axis_param(self):
+        def test_impl(n):
+            df = pd.DataFrame({'A': np.arange(n), 'B': np.arange(n)})
+            return df.sum(axis=1)
+
+        n = 100
+        hpat_func = hpat.jit(test_impl)
+        pd.testing.assert_series_equal(hpat_func(n), test_impl(n))
 
 
 if __name__ == "__main__":

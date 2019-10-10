@@ -3,6 +3,8 @@
 Quick Introduction to HPAT
 ==========================
 
+.. todo:: Change content here considering Developer's perspective
+
 High Performance Analytics Toolkit (HPAT) is a big data analytics and machine
 learning framework that provides Python's ease of use but is extremely fast.
 
