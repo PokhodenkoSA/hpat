@@ -1174,7 +1174,7 @@ class HiFramesPass(FunctionPass):
         infer.build_constraint()
         infer.propagate()
         out_tp = infer.typevars[output_var.name].getone()
-        # typemap, restype, calltypes = numba.compiler.type_inference_stage(self.state.typingctx, dummy_ir, self.state.args, None)
+        # typemap, restype, calltypes = numba.typed_passes.type_inference_stage(self.state.typingctx, dummy_ir, self.state.args, None)
         return out_tp
 
     def _is_df_obj_call(self, call_var, obj_name):

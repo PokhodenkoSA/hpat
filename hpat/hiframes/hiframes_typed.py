@@ -1266,7 +1266,7 @@ class HiFramesTypedPass(FunctionPass):
         ir_utils.remove_dead(f_ir.blocks, f_ir.arg_names, f_ir)
         f_ir._definitions = build_definitions(f_ir.blocks)
         arg_typs = (self.state.typemap[data.name],)
-        f_typemap, _f_ret_t, f_calltypes = numba.compiler.type_inference_stage(
+        f_typemap, _f_ret_t, f_calltypes = numba.typed_passes.type_inference_stage(
             self.state.typingctx, f_ir, arg_typs, None)
         # remove argument entries like arg.a from typemap
         arg_names = [vname for vname in f_typemap if vname.startswith("arg.")]
@@ -1460,7 +1460,7 @@ class HiFramesTypedPass(FunctionPass):
         arg_typs = (self.state.typemap[data.name], self.state.typemap[other_data.name],)
         if not use_nan:
             arg_typs += (self.state.typemap[rhs.args[2].name],)
-        f_typemap, _f_ret_t, f_calltypes = numba.compiler.type_inference_stage(
+        f_typemap, _f_ret_t, f_calltypes = numba.typed_passes.type_inference_stage(
             self.state.typingctx, f_ir, arg_typs, None)
         # remove argument entries like arg.a from typemap
         arg_names = [vname for vname in f_typemap if vname.startswith("arg.")]
