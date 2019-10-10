@@ -416,7 +416,5 @@ class TestGroupBy(unittest.TestCase):
         test_impl('A')
 
 
-
-
 if __name__ == "__main__":
     unittest.main()

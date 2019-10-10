@@ -729,8 +729,8 @@ class DataFramePass(FunctionPass):
 
         if func_name == 'isna':
             rhs.args.insert(0, df_var)
-            arg_typs = tuple(self.typemap[v.name] for v in rhs.args)
-            kw_typs = {name: self.typemap[v.name]
+            arg_typs = tuple(self.state.typemap[v.name] for v in rhs.args)
+            kw_typs = {name: self.state.typemap[v.name]
                        for name, v in dict(rhs.kws).items()}
             impl = hpat.hiframes.pd_dataframe_ext.isna_overload(
                 *arg_typs, **kw_typs)
@@ -844,8 +844,8 @@ class DataFramePass(FunctionPass):
 
         if func_name == 'median':
             rhs.args.insert(0, df_var)
-            arg_typs = tuple(self.typemap[v.name] for v in rhs.args)
-            kw_typs = {name: self.typemap[v.name]
+            arg_typs = tuple(self.state.typemap[v.name] for v in rhs.args)
+            kw_typs = {name: self.state.typemap[v.name]
                        for name, v in dict(rhs.kws).items()}
             impl = hpat.hiframes.pd_dataframe_ext.median_overload(
                 *arg_typs, **kw_typs)
@@ -1380,7 +1380,7 @@ class DataFramePass(FunctionPass):
 
     def _run_call_df_isna(self, assign, lhs, rhs):
         df_var = rhs.args[0]
-        df_typ = self.typemap[df_var.name]
+        df_typ = self.state.typemap[df_var.name]
 
         # impl: for each column, convert data to series, call S.isna(), get
         # output data and create a new dataframe

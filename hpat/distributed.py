@@ -1,7 +1,7 @@
 """
 .. module:: distributed.py
- 
-The description of the entire module will be here. 
+
+The description of the entire module will be here.
 Supported and unsupported list can also be added here
 """
 from __future__ import print_function, division, absolute_import
@@ -82,44 +82,44 @@ fir_text = None
 @register_pass(mutates_CFG=True, analysis_only=False)
 class DistributedPass(FunctionPass):
     """The summary of the class should be here for example below is the summary line for this class
-    
+
     This class analyzes program and transforms to distributed
     """
 
     _name = "distributed_pass"
-        """ The summary for the class or init method can be mentioned here 
-       
-        The details can be multiple lines. You can mention all the supported
-        and not supported args here or you can do it in ``Parameters`` section
-        
-        .. only:: developer
-                 
-           The content for **Developer's Guide** should go here
+    """ The summary for the class or init method can be mentioned here
 
-        .. only:: user
+    The details can be multiple lines. You can mention all the supported
+    and not supported args here or you can do it in ``Parameters`` section
 
-           The content here is visible only to the **User's Guide** So all user specific content should be added here
-           
-        Note
-        ----
-        Do not include the `self` paramter in the ``Parameters`` section
-        
-        Parameters
-        -----------
-        func_ir : str
-             description of `func_ir`.(optional) you can mention supported or not here
-        typingctx : TypeForThisParam
-             description of `typingctx`
-        targetctx : TypeForThisParam
-             description of `targetctx`
-        typemap : TypeForThisParam
-             description of `typemap`
-        calltypes : TypeForThisParam
-             description of `calltypes`
-        metadata : TypeForThisParam
-             description of `metadata`
-             
-        """
+    .. only:: developer
+
+        The content for **Developer's Guide** should go here
+
+    .. only:: user
+
+        The content here is visible only to the **User's Guide** So all user specific content should be added here
+
+    Note
+    ----
+    Do not include the `self` paramter in the ``Parameters`` section
+
+    Parameters
+    -----------
+    func_ir : str
+            description of `func_ir`.(optional) you can mention supported or not here
+    typingctx : TypeForThisParam
+            description of `typingctx`
+    targetctx : TypeForThisParam
+            description of `targetctx`
+    typemap : TypeForThisParam
+            description of `typemap`
+    calltypes : TypeForThisParam
+            description of `calltypes`
+    metadata : TypeForThisParam
+            description of `metadata`
+
+    """
 
 
     def __init__(self):

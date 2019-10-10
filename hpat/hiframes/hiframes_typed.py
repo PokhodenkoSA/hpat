@@ -2293,9 +2293,9 @@ class HiFramesTypedPass(FunctionPass):
             return np.arange(n)
 
         f_block = compile_to_numba_ir(
-            _gen_arange, {'np': np}, self.typingctx,
-            (self.typemap[series_data.name],),
-            self.typemap, self.calltypes).blocks.popitem()[1]
+            _gen_arange, {'np': np}, self.state.typingctx,
+            (self.state.typemap[series_data.name],),
+            self.state.typemap, self.state.calltypes).blocks.popitem()[1]
         replace_arg_nodes(f_block, [series_data])
         nodes += f_block.body[:-2]
         return nodes[-1].target
