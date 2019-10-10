@@ -102,6 +102,10 @@ class SeriesType(types.IterableType):
         # needed?
         return self.dtype, self.data, self.index, self.is_named
 
+    @property
+    def ndim(self):
+        return self.data.ndim
+
     def unify(self, typingctx, other):
         if isinstance(other, SeriesType):
             new_index = types.none
@@ -403,14 +407,17 @@ def cast_series(context, builder, fromty, toty, val):
 class SeriesAttribute(AttributeTemplate):
     key = SeriesType
 
+    # PR135. This needs to be commented out
     def resolve_values(self, ary):
         return series_to_array_type(ary, True)
 
-    def resolve_shape(self, ary):
-        return types.Tuple((types.int64,))
+# PR135. This needs to be commented out
+    # def resolve_shape(self, ary):
+    #     return types.Tuple((types.int64,))
 
-    def resolve_index(self, ary):
-        return ary.index
+# PR171. This needs to be commented out
+#     def resolve_index(self, ary):
+#         return ary.index
 
     def resolve_str(self, ary):
         assert ary.dtype in (string_type, types.List(string_type))
@@ -481,12 +488,12 @@ class SeriesAttribute(AttributeTemplate):
         out = SeriesType(ary.dtype, ary.data, out_index)
         return signature(out, *args)
 
-    @bound_function("array.take")
-    def resolve_take(self, ary, args, kws):
-        resolver = ArrayAttribute.resolve_take.__wrapped__
-        sig = resolver(self, ary.data, args, kws)
-        sig.return_type = if_arr_to_series_type(sig.return_type)
-        return sig
+#     @bound_function("array.take")
+#     def resolve_take(self, ary, args, kws):
+#         resolver = ArrayAttribute.resolve_take.__wrapped__
+#         sig = resolver(self, ary.data, args, kws)
+#         sig.return_type = if_arr_to_series_type(sig.return_type)
+#         return sig
 
     @bound_function("series.quantile")
     def resolve_quantile(self, ary, args, kws):
@@ -501,11 +508,11 @@ class SeriesAttribute(AttributeTemplate):
     def resolve_nunique(self, ary, args, kws):
         return signature(types.intp, *args)
 
-    @bound_function("series.unique")
-    def resolve_unique(self, ary, args, kws):
-        # unique returns ndarray for some reason
-        arr_typ = series_to_array_type(ary)
-        return signature(arr_typ, *args)
+    # @bound_function("series.unique")
+    # def resolve_unique(self, ary, args, kws):
+    #     # unique returns ndarray for some reason
+    #     arr_typ = series_to_array_type(ary)
+    #     return signature(arr_typ, *args)
 
     @bound_function("series.describe")
     def resolve_describe(self, ary, args, kws):
@@ -591,14 +598,14 @@ class SeriesAttribute(AttributeTemplate):
     def resolve_combine(self, ary, args, kws):
         return self._resolve_combine_func(ary, args, kws)
 
-    @bound_function("series.abs")
-    def resolve_abs(self, ary, args, kws):
-        # call np.abs(A) to get return type
-        arr_typ = series_to_array_type(ary)
-        all_args = tuple([arr_typ] + list(args))
-        ret_typ = self.context.resolve_function_type(np.abs, all_args, kws).return_type
-        ret_typ = if_arr_to_series_type(ret_typ)
-        return signature(ret_typ, *args)
+    # @bound_function("series.abs")
+    # def resolve_abs(self, ary, args, kws):
+    #     # call np.abs(A) to get return type
+    #     arr_typ = series_to_array_type(ary)
+    #     all_args = tuple([arr_typ] + list(args))
+    #     ret_typ = self.context.resolve_function_type(np.abs, all_args, kws).return_type
+    #     ret_typ = if_arr_to_series_type(ret_typ)
+    #     return signature(ret_typ, *args)
 
     def _resolve_cov_func(self, ary, args, kws):
         # array is valid since hiframes_typed calls this after type replacement
@@ -634,7 +641,7 @@ class SeriesAttribute(AttributeTemplate):
             all_arrs = types.Tuple((arr_typ, if_series_to_array_type(other.dtype)))
         else:
             raise ValueError("Invalid input for Series.append (Series, or tuple/list of Series expected)")
- 
+
         # TODO: list
         # call np.concatenate to handle type promotion e.g. int, float -> float
         ret_typ = self.context.resolve_function_type(np.concatenate, (all_arrs,), kws).return_type
@@ -889,7 +896,7 @@ class GetItemSeriesIat(AbstractTemplate):
 
 @infer
 @infer_global(operator.eq)
-# @infer_global(operator.ne)
+@infer_global(operator.ne)
 @infer_global(operator.ge)
 @infer_global(operator.gt)
 @infer_global(operator.le)
@@ -979,7 +986,7 @@ for fname in ["cumsum", "cumprod"]:
     install_array_method(fname, generic_expand_cumulative_series)
 
 # TODO: add itemsize, strides, etc. when removed from Pandas
-_not_series_array_attrs = ['flat', 'ctypes', 'itemset', 'reshape', 'sort', 'flatten']
+_not_series_array_attrs = ['flat', 'ctypes', 'itemset', 'reshape', 'sort', 'flatten', 'resolve_take']
 
 # use ArrayAttribute for attributes not defined in SeriesAttribute
 for attr, func in numba.typing.arraydecl.ArrayAttribute.__dict__.items():
@@ -1146,20 +1153,20 @@ def install_series_method(op, name, generic):
 
 
 explicit_binop_funcs = {
-    'add': operator.add,
-    'sub': operator.sub,
-    'mul': operator.mul,
-    'div': operator.truediv,
-    'truediv': operator.truediv,
-    'floordiv': operator.floordiv,
-    'mod': operator.mod,
-    'pow': operator.pow,
-    'lt': operator.lt,
-    'gt': operator.gt,
-    'le': operator.le,
-    'ge': operator.ge,
-    #    'ne': operator.ne,
-    'eq': operator.eq,
+    # 'add': operator.add,
+    # 'sub': operator.sub,
+    # 'mul': operator.mul,
+    # 'div': operator.truediv,
+    # 'truediv': operator.truediv,
+    # 'floordiv': operator.floordiv,
+    # 'mod': operator.mod,
+    # 'pow': operator.pow,
+    # 'lt': operator.lt,
+    # 'gt': operator.gt,
+    # 'le': operator.le,
+    # 'ge': operator.ge,
+    # 'ne': operator.ne,
+    # 'eq': operator.eq,
 }
 
 

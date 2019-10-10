@@ -583,6 +583,9 @@ class DataFramePass(FunctionPass):
         if fdef == ('head_dummy', 'hpat.hiframes.pd_dataframe_ext'):
             return self._run_call_df_head(assign, lhs, rhs)
 
+        if fdef == ('isna_dummy', 'hpat.hiframes.pd_dataframe_ext'):
+            return self._run_call_df_isna(assign, lhs, rhs)
+
         if fdef == ('fillna_dummy', 'hpat.hiframes.pd_dataframe_ext'):
             return self._run_call_df_fillna(assign, lhs, rhs)
 
@@ -612,6 +615,9 @@ class DataFramePass(FunctionPass):
 
         if fdef == ('mean_dummy', 'hpat.hiframes.pd_dataframe_ext'):
             return self._run_call_col_reduce(assign, lhs, rhs, 'mean')
+
+        if fdef == ('median_dummy', 'hpat.hiframes.pd_dataframe_ext'):
+            return self._run_call_col_reduce(assign, lhs, rhs, 'median')
 
         if fdef == ('std_dummy', 'hpat.hiframes.pd_dataframe_ext'):
             return self._run_call_col_reduce(assign, lhs, rhs, 'std')
@@ -721,6 +727,18 @@ class DataFramePass(FunctionPass):
                                       pysig=numba.utils.pysignature(stub),
                                       kws=dict(rhs.kws))
 
+        if func_name == 'isna':
+            rhs.args.insert(0, df_var)
+            arg_typs = tuple(self.typemap[v.name] for v in rhs.args)
+            kw_typs = {name: self.typemap[v.name]
+                       for name, v in dict(rhs.kws).items()}
+            impl = hpat.hiframes.pd_dataframe_ext.isna_overload(
+                *arg_typs, **kw_typs)
+            stub = (lambda df: None)
+            return self._replace_func(impl, rhs.args,
+                                      pysig=numba.utils.pysignature(stub),
+                                      kws=dict(rhs.kws))
+
         if func_name == 'fillna':
             rhs.args.insert(0, df_var)
             arg_typs = tuple(self.state.typemap[v.name] for v in rhs.args)
@@ -817,6 +835,19 @@ class DataFramePass(FunctionPass):
             kw_typs = {name: self.state.typemap[v.name]
                        for name, v in dict(rhs.kws).items()}
             impl = hpat.hiframes.pd_dataframe_ext.mean_overload(
+                *arg_typs, **kw_typs)
+            stub = (lambda df, axis=None, skipna=None, level=None,
+                    numeric_only=None: None)
+            return self._replace_func(impl, rhs.args,
+                                      pysig=numba.utils.pysignature(stub),
+                                      kws=dict(rhs.kws))
+
+        if func_name == 'median':
+            rhs.args.insert(0, df_var)
+            arg_typs = tuple(self.typemap[v.name] for v in rhs.args)
+            kw_typs = {name: self.typemap[v.name]
+                       for name, v in dict(rhs.kws).items()}
+            impl = hpat.hiframes.pd_dataframe_ext.median_overload(
                 *arg_typs, **kw_typs)
             stub = (lambda df, axis=None, skipna=None, level=None,
                     numeric_only=None: None)
@@ -1204,7 +1235,7 @@ class DataFramePass(FunctionPass):
         n_cols = len(df_typ.columns)
         data_args = tuple('data{}'.format(i) for i in range(n_cols))
 
-        func_text = "def _mean_impl({}):\n".format(", ".join(data_args))
+        func_text = "def _reduce_impl({}):\n".format(", ".join(data_args))
         for d in data_args:
             func_text += "  {} = hpat.hiframes.api.init_series({})\n".format(d + '_S', d)
             func_text += "  {} = {}.{}()\n".format(d + '_O', d + '_S', func_name)
@@ -1215,11 +1246,11 @@ class DataFramePass(FunctionPass):
         func_text += "  return hpat.hiframes.api.init_series(data, index)\n"
         loc_vars = {}
         exec(func_text, {}, loc_vars)
-        _mean_impl = loc_vars['_mean_impl']
+        _reduce_impl = loc_vars['_reduce_impl']
 
         nodes = []
         col_vars = [self._get_dataframe_data(df_var, c, nodes) for c in df_typ.columns]
-        return self._replace_func(_mean_impl, col_vars, pre_nodes=nodes)
+        return self._replace_func(_reduce_impl, col_vars, pre_nodes=nodes)
 
     def _run_call_df_fillna(self, assign, lhs, rhs):
         df_var = rhs.args[0]
@@ -1346,6 +1377,36 @@ class DataFramePass(FunctionPass):
             data = [self._gen_arr_copy(v, nodes) for v in data]
         _init_df = _gen_init_df(out_typ.columns)
         return self._replace_func(_init_df, data, pre_nodes=nodes)
+
+    def _run_call_df_isna(self, assign, lhs, rhs):
+        df_var = rhs.args[0]
+        df_typ = self.typemap[df_var.name]
+
+        # impl: for each column, convert data to series, call S.isna(), get
+        # output data and create a new dataframe
+        n_cols = len(df_typ.columns)
+        data_args = tuple('data{}'.format(i) for i in range(n_cols))
+        init_df_args_data = ", ".join(d + '_O' for d in data_args)
+        init_df_args_cols = ", ".join("'{}'".format(c) for c in df_typ.columns)
+
+        func_lines = []
+        func_lines.append("def _isna_impl({}):".format(", ".join(data_args)))
+        for d in data_args:
+            func_lines.append("  {} = hpat.hiframes.api.init_series({})".format(d + '_S', d))
+            func_lines.append("  {} = hpat.hiframes.api.get_series_data({}.isna())".format(d + '_O', d + '_S'))
+        func_lines.append("  return hpat.hiframes.pd_dataframe_ext.init_dataframe({}, None, {})\n".format(
+            init_df_args_data,
+            init_df_args_cols
+        ))
+        func_text = '\n'.join(func_lines)
+
+        loc_vars = {}
+        exec(func_text, {}, loc_vars)
+        _isna_impl = loc_vars['_isna_impl']
+
+        nodes = []
+        col_vars = [self._get_dataframe_data(df_var, c, nodes) for c in df_typ.columns]
+        return self._replace_func(_isna_impl, col_vars, pre_nodes=nodes)
 
     def _run_call_isin(self, assign, lhs, rhs):
         df_var, values = rhs.args

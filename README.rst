@@ -100,7 +100,7 @@ Building on Linux with setuptools
 ::
 
     PYVER=<3.6 or 3.7>
-    conda create -n HPAT -q -y -c numba -c conda-forge -c defaults numba mpich pyarrow gcc_linux-64 gxx_linux-64 gfortran_linux-64 scipy pandas boost python=$PYVER
+    conda create -n HPAT -q -y -c numba -c conda-forge -c defaults numba mpich pyarrow=0.14.1 arrow-cpp=0.14.1 gcc_linux-64 gxx_linux-64 gfortran_linux-64 scipy pandas boost python=$PYVER
     source activate HPAT
     git clone https://github.com/IntelPython/hpat
     cd hpat
@@ -112,9 +112,9 @@ In case of issues, reinstalling in a new conda environment is recommended.
 Building HPAT from Source on Windows
 ------------------------------------
 
-Building HPAT on Windows requires Build Tools for Visual Studio 2017 (14.0):
+Building HPAT on Windows requires Build Tools for Visual Studio 2019 (with component MSVC v140 - VS 2015 C++ build tools (v14.00)):
 
-* Install `Build Tools for Visual Studio 2017 (14.0) <https://www.visualstudio.com/downloads/#build-tools-for-visual-studio-2017>`_.
+* Install `Build Tools for Visual Studio 2019 (with component MSVC v140 - VS 2015 C++ build tools (v14.00)) <https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019>`_.
 * Install `Miniconda for Windows <https://repo.continuum.io/miniconda/Miniconda3-latest-Windows-x86_64.exe>`_.
 * Start 'Anaconda prompt'
 
@@ -127,7 +127,7 @@ Building on Windows with conda-build
 
     set PYVER=<3.6 or 3.7>
     conda create -n CBLD -q -y python=%PYVER% conda-build conda-verify vc vs2015_runtime vs2015_win-64
-    activate CBLD
+    conda activate CBLD
     git clone https://github.com/IntelPython/hpat.git
     cd hpat
     conda build --python %PYVER% --override-channels -c numba -c defaults -c intel buildscripts\hpat-conda-recipe
@@ -136,8 +136,8 @@ Building on Windows with setuptools
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ::
 
-    conda create -n HPAT -c numba -c defaults -c intel python=<3.6 or 3.7> numba impi-devel pyarrow scipy pandas boost
-    activate HPAT
+    conda create -n HPAT -c numba -c defaults -c intel python=<3.6 or 3.7> numba impi-devel pyarrow=0.14.1 arrow-cpp=0.14.1 scipy pandas boost
+    conda activate HPAT
     git clone https://github.com/IntelPython/hpat.git
     cd hpat
     set INCLUDE=%INCLUDE%;%CONDA_PREFIX%\Library\include
@@ -156,6 +156,7 @@ Troubleshooting Windows Build
 * For setting up Visual Studio, one might need go to registry at
   ``HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\SxS\VS7``,
   and add a string value named ``14.0`` whose data is ``C:\Program Files (x86)\Microsoft Visual Studio 14.0\``.
+* Sometimes if the conda version or visual studio version being used are not latest then building HPAT can throw some vague error about a keyword used in a file. So make sure you are using the latest versions.
 
 Running unit tests
 ------------------

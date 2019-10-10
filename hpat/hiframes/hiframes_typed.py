@@ -307,6 +307,7 @@ class HiFramesTypedPass(FunctionPass):
             assign.value = ir.Global("np.dtype({})".format(typ_str), np.dtype(typ_str), rhs.loc)
             return [assign]
 
+        # PR135. This needs to be commented out
         if isinstance(rhs_type, SeriesType) and rhs.attr == 'values':
             # simply return the column
             nodes = []
@@ -315,11 +316,12 @@ class HiFramesTypedPass(FunctionPass):
             nodes.append(assign)
             return nodes
 
-        if isinstance(rhs_type, SeriesType) and rhs.attr == 'index':
-            nodes = []
-            assign.value = self._get_series_index(rhs.value, nodes)
-            nodes.append(assign)
-            return nodes
+        # PR171. This needs to be commented out
+        # if isinstance(rhs_type, SeriesType) and rhs.attr == 'index':
+        #     nodes = []
+        #     assign.value = self._get_series_index(rhs.value, nodes)
+        #     nodes.append(assign)
+        #     return nodes
 
         if isinstance(rhs_type, SeriesType) and rhs.attr == 'shape':
             nodes = []
@@ -594,15 +596,20 @@ class HiFramesTypedPass(FunctionPass):
 
         self._convert_series_calltype(rhs)
         rhs.args = new_args
-        if isinstance(self.state.typemap[lhs], SeriesType):
+
+        # Second condition is to avoid chenging SeriesGroupBy class members
+        # test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_groupby_count
+        if isinstance(self.state.typemap[lhs], SeriesType) and not isinstance(func_mod, ir.Var):
             scope = assign.target.scope
             new_lhs = ir.Var(scope, mk_unique_var(lhs + '_data'), rhs.loc)
             self.state.typemap[new_lhs.name] = self.state.calltypes[rhs].return_type
             nodes.append(ir.Assign(rhs, new_lhs, rhs.loc))
-            return self._replace_func(lambda A: hpat.hiframes.api.init_series(A), [new_lhs], pre_nodes=nodes)
-        else:
-            nodes.append(assign)
-            return nodes
+            def _replace_func_param_impl(A):
+                return hpat.hiframes.api.init_series(A)
+            return self._replace_func(_replace_func_param_impl, [new_lhs], pre_nodes=nodes)
+
+        nodes.append(assign)
+        return nodes
 
     def _run_call_hiframes(self, assign, lhs, rhs, func_name):
         if func_name in ('to_arr_from_series',):
@@ -859,7 +866,7 @@ class HiFramesTypedPass(FunctionPass):
             data = self._get_series_data(series_var, nodes)
             return self._replace_func(func, [data], pre_nodes=nodes)
 
-        if func_name in ('std', 'nunique', 'describe', 'abs', 'isna',
+        if func_name in ('std', 'nunique', 'describe', 'isna',
                          'isnull', 'median', 'idxmin', 'idxmax', 'unique'):
             if rhs.args or rhs.kws:
                 raise ValueError("unsupported Series.{}() arguments".format(
@@ -942,11 +949,16 @@ class HiFramesTypedPass(FunctionPass):
                     ir.Const(5, lhs.loc), n_arg, lhs.loc))
 
             data = self._get_series_data(series_var, nodes)
-            index = self._get_series_index(series_var, nodes)
-            name = self._get_series_name(series_var, nodes)
             func = series_replace_funcs[func_name]
-            if self.state.typemap[index.name] != types.none:
+
+            if self.state.typemap[series_var.name].index != types.none:
+                index = self._get_series_index(series_var, nodes)
                 func = series_replace_funcs['head_index']
+            else:
+                index = self._get_index_values(data, nodes)
+
+            name = self._get_series_name(series_var, nodes)
+
             return self._replace_func(
                 func, (data, index, n_arg, name), pre_nodes=nodes)
 
@@ -1030,7 +1042,7 @@ class HiFramesTypedPass(FunctionPass):
             return self._replace_func(_binop_impl, [series_var] + rhs.args)
 
         # functions we revert to Numpy for now, otherwise warning
-        _conv_to_np_funcs = ('copy', 'cumsum', 'cumprod', 'take', 'astype')
+        _conv_to_np_funcs = ('copy', 'cumsum', 'cumprod', 'astype')
         # TODO: handle series-specific cases for this funcs
         if (not func_name.startswith("values.") and func_name
                 not in _conv_to_np_funcs):
@@ -1067,18 +1079,7 @@ class HiFramesTypedPass(FunctionPass):
         if self.state.typemap[series_var.name].index != types.none:
             index_var = self._get_series_index(series_var, nodes)
         else:
-            # generating the range Index, TODO: general get_index_values()
-            def _get_data(S):  # pragma: no cover
-                n = len(S)
-                return np.arange(n)
-
-            f_block = compile_to_numba_ir(
-                _get_data, {'np': np}, self.state.typingctx,
-                (self.state.typemap[data.name],),
-                self.state.typemap, self.state.calltypes).blocks.popitem()[1]
-            replace_arg_nodes(f_block, [data])
-            nodes += f_block.body[:-2]
-            index_var = nodes[-1].target
+            index_var = self._get_index_values(data, nodes)
 
         # output data arrays for results, before conversion to Series
         out_data = ir.Var(lhs.scope, mk_unique_var(lhs.name + '_data'), lhs.loc)
@@ -2275,6 +2276,27 @@ class HiFramesTypedPass(FunctionPass):
             self.state.calltypes
         ).blocks.popitem()[1]
         replace_arg_nodes(f_block, [series_var])
+        nodes += f_block.body[:-2]
+        return nodes[-1].target
+
+    def _get_index_values(self, series_data, nodes):
+        """
+        Generate index values by numpy.arange
+
+        :param series_data: numba ir.Var for series data
+        :param nodes: list of all irs
+        :return: numba ir.Var for generated index
+        """
+
+        def _gen_arange(S):  # pragma: no cover
+            n = len(S)
+            return np.arange(n)
+
+        f_block = compile_to_numba_ir(
+            _gen_arange, {'np': np}, self.typingctx,
+            (self.typemap[series_data.name],),
+            self.typemap, self.calltypes).blocks.popitem()[1]
+        replace_arg_nodes(f_block, [series_data])
         nodes += f_block.body[:-2]
         return nodes[-1].target
 
