@@ -89,8 +89,12 @@ class HiFramesTypedPass(FunctionPass):
     def __init__(self):
         # keep track of tuple variables change by to_const_tuple
         self._type_changed_vars = []
+        self._states_stack = []
+        self.state = None
 
     def run_pass(self, state):
+        self._states_stack.append(self.state)
+
         self.state = state
         blocks = self.state.func_ir.blocks
         # topo_order necessary so Series data replacement optimization can be
@@ -152,6 +156,8 @@ class HiFramesTypedPass(FunctionPass):
 
         self.state.func_ir._definitions = build_definitions(self.state.func_ir.blocks)
         dprint_func_ir(self.state.func_ir, "after hiframes_typed")
+
+        self.state = self._states_stack.pop()
 
         return True
 
