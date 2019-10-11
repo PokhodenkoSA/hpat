@@ -120,9 +120,16 @@ class DistributedPass(FunctionPass):
             description of `metadata`
 
     """
-
-
     def __init__(self):
+        pass
+
+    def run_pass(self, state):
+        return DistributedPassImpl(state).run_pass()
+
+
+class DistributedPassImpl(object):
+
+    def __init__(self, state):
         self._dist_analysis = None
         self._T_arrs = None  # set of transposed arrays (taken from analysis)
 
@@ -143,15 +150,16 @@ class DistributedPass(FunctionPass):
         # size for 1DVar allocs and parfors
         self.oneDVar_len_vars = {}
 
-    def run_pass(self, state):
         self.state = state
+
+    def run_pass(self):
         remove_dels(self.state.func_ir.blocks)
         dprint_func_ir(self.state.func_ir, "starting distributed pass")
         self.state.func_ir._definitions = build_definitions(self.state.func_ir.blocks)
         dist_analysis_pass = DistributedAnalysis(
             self.state.func_ir, self.state.typemap, self.state.calltypes, self.state.typingctx,
             self.state.metadata)
-        self._dist_analysis = dist_analysis_pass.run_pass(state)
+        self._dist_analysis = dist_analysis_pass.run_pass(self.state)
         # dprint_func_ir(self.state.func_ir, "after analysis distributed")
 
         self._T_arrs = dist_analysis_pass._T_arrs

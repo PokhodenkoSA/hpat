@@ -110,6 +110,15 @@ class HiFramesPass(FunctionPass):
     _name = "hi_frames_pass"
 
     def __init__(self):
+        pass
+
+    def run_pass(self, state):
+        return HiFramesPassImpl(state).run_pass()
+
+
+class HiFramesPassImpl(object):
+
+    def __init__(self, state):
         # replace inst variables as determined previously during the pass
         # currently use to keep lhs of Arg nodes intact
         self.replace_var_dict = {}
@@ -122,9 +131,9 @@ class HiFramesPass(FunctionPass):
         self.arrow_tables = {}
         self.reverse_copies = {}
 
-    def run_pass(self, state):
         self.state = state
 
+    def run_pass(self):
         # print("\nBefore:")
         # self.print_ir(self.state.func_ir)
         # print("\n\n")
