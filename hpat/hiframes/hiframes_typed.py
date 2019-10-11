@@ -87,11 +87,20 @@ class HiFramesTypedPass(FunctionPass):
     _name = "hi_frames_typed_pass"
 
     def __init__(self):
-        # keep track of tuple variables change by to_const_tuple
-        self._type_changed_vars = []
+        pass
 
     def run_pass(self, state):
+        return HiFramesTypedPassImpl(state).run_pass()
+
+
+class HiFramesTypedPassImpl(object):
+
+    def __init__(self, state):
+        # keep track of tuple variables change by to_const_tuple
+        self._type_changed_vars = []
         self.state = state
+
+    def run_pass(self):
         blocks = self.state.func_ir.blocks
         # topo_order necessary so Series data replacement optimization can be
         # performed in one pass
