@@ -14,7 +14,7 @@ from numba import ir_utils, ir, postproc
 from numba.targets.registry import CPUDispatcher
 from numba.ir_utils import guard, get_definition
 from numba.inline_closurecall import inline_closure_call, InlineClosureCallPass
-from numba.typed_passes import (NopythonTypeInference, AnnotateTypes, ParforPass, DeadCodeElimination)
+from numba.typed_passes import (NopythonTypeInference, AnnotateTypes, ParforPass)
 from numba.untyped_passes import (DeadBranchPrune, InlineInlinables, InlineClosureLikes)
 from hpat import config
 from hpat.distributed import DistributedPass
