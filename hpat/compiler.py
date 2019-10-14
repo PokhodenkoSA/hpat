@@ -214,11 +214,9 @@ class HPATPipeline(numba.compiler.CompilerBase):
         pm = DefaultPassBuilder.define_nopython_pipeline(self.state)
 
         position = self.pass_position(pm, InlineInlinables)
-        if pm.passes[position + 1][0] == DeadBranchPrune:
-            position += 1
 
-        self.add_pass_in_position(pm, HiFramesPass, position + 1)
-        pm.add_pass_after(InlinePass, InlineInlinables)
+        self.add_pass_in_position(pm, InlinePass, position - 1)
+        pm.add_pass_after(HiFramesPass, InlinePass)
         # pm.add_pass_after(HiFramesPass, InlineInlinables)
         # pm.add_pass_after(HiFramesPass, InlineInlinables)
         # pm.add_pass_after(DataFramePass, AnnotateTypes)
