@@ -196,6 +196,7 @@ class HiFramesPassImpl(object):
                         ir.Var(block.scope, "dummy", inst.loc),
                         rp_func.args, (), inst.loc)
                     block.body = new_body + block.body[i:]
+                    rp_func.func.__globals__.update(rp_func.glbls)
                     inline_closure_call(self.state.func_ir, rp_func.glbls,
                                         block, len(new_body), rp_func.func, work_list=work_list)
                     replaced = True
@@ -1156,6 +1157,7 @@ class HiFramesPassImpl(object):
                     and stmt.value.op == 'call'):
                 fdef = guard(get_definition, f_ir, stmt.value.func)
                 if isinstance(fdef, ir.Global) and fdef.name == 'map_func':
+                    func.__globals__.update(_globals)
                     inline_closure_call(f_ir, _globals, f_ir.blocks[first_label], i, func)
                     break
 

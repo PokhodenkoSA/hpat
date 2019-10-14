@@ -141,6 +141,7 @@ class DataFramePassImpl(object):
                         ir.Var(block.scope, "dummy", inst.loc),
                         rp_func.args, (), inst.loc)
                     block.body = new_body + block.body[i:]
+                    rp_func.func.__globals__.update(rp_func.glbls)
                     callee_blocks = inline_closure_call(self.state.func_ir, rp_func.glbls,
                                                         block, len(new_body), rp_func.func, self.state.typingctx,
                                                         rp_func.arg_types,
@@ -1031,6 +1032,7 @@ class DataFramePassImpl(object):
                         and stmt.value.op == 'call'):
                     fdef = guard(get_definition, f_ir, stmt.value.func)
                     if isinstance(fdef, ir.Global) and fdef.name == 'map_func':
+                        func.__globals__.update(_globals)
                         inline_closure_call(f_ir, _globals, block, i, func)
                         # fix the global value to avoid typing errors
                         fdef.value = 1

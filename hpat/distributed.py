@@ -266,6 +266,7 @@ class DistributedPassImpl(object):
                     block.body = new_body + block.body[i:]
                     # TODO: use Parfor loop blocks when replacing funcs in
                     # parfor loop body
+                    rp_func.func.__globals__.update(rp_func.glbls)
                     inline_closure_call(self.state.func_ir, rp_func.glbls,
                                         block, len(new_body), rp_func.func, self.state.typingctx,
                                         rp_func.arg_types,
