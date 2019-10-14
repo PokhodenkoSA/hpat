@@ -168,26 +168,6 @@ class InlinePass(FunctionPass):
         return True
 
 @register_pass(mutates_CFG=True, analysis_only=False)
-class InlineClosuresPass(FunctionPass):
-    _name = "hpat_inline_closures_pass"
-
-    def __init__(self):
-        pass
-
-    def run_pass(self, state):
-        assert state.func_ir
-
-        inline_pass = InlineClosureCallPass(state.func_ir,
-                                            state.flags.auto_parallel,
-                                            state.parfor_diagnostics.replaced_fns,
-                                            True)
-        inline_pass.run()
-        # Remove all Dels, and re-run postproc
-        post_proc = postproc.PostProcessor(state.func_ir)
-        post_proc.run()
-        return True
-
-@register_pass(mutates_CFG=True, analysis_only=False)
 class PostprocessorPass(FunctionPass):
     _name = "hpat_postprocessor_pass"
 
@@ -237,7 +217,6 @@ class HPATPipeline(numba.compiler.CompilerBase):
 
         self.add_pass_in_position(pm, InlinePass, position - 1)
         pm.add_pass_after(HiFramesPass, InlinePass)
-        # pm.add_pass_after(InlineClosuresPass, HiFramesPass)
         # pm.add_pass_after(HiFramesPass, InlineInlinables)
         # pm.add_pass_after(HiFramesPass, InlineInlinables)
         # pm.add_pass_after(DataFramePass, AnnotateTypes)
