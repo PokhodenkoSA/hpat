@@ -48,7 +48,15 @@ class DataFramePass(FunctionPass):
         pass
 
     def run_pass(self, state):
+        return DataFramePassImpl(state).run_pass()
+
+
+class DataFramePassImpl(object):
+
+    def __init__(self, state):
         self.state = state
+
+    def run_pass(self):
         blocks = self.state.func_ir.blocks
         # topo_order necessary so DataFrame data replacement optimization can
         # be performed in one pass
