@@ -585,7 +585,7 @@ class HiFramesPassImpl(object):
         func_text += "  ({},) = hpat.hiframes.api.dropna(({},), inplace)\n".format(
             out_names, arg_names)
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _dropna_imp = loc_vars['_dropna_imp']
 
         f_block = compile_to_numba_ir(_dropna_imp, {'hpat': hpat}).blocks.popitem()[1]
@@ -727,7 +727,7 @@ class HiFramesPassImpl(object):
         func_text += "  return hpat.hiframes.pd_dataframe_ext.init_dataframe({}, index, {})\n".format(
             data_args, col_args)
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _init_df = loc_vars['_init_df']
 
         # TODO: support index var
@@ -845,7 +845,7 @@ class HiFramesPassImpl(object):
         func_text += "  return hpat.hiframes.pd_dataframe_ext.init_dataframe({}, None, {})\n".format(
             data_args, ", ".join("'{}'".format(c) for c in columns))
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _init_df = loc_vars['_init_df']
 
         f_block = compile_to_numba_ir(
@@ -983,7 +983,7 @@ class HiFramesPassImpl(object):
         func_text += "  return hpat.hiframes.pd_dataframe_ext.init_dataframe({}, None, {})\n".format(
             data_args, ", ".join("'{}'".format(c) for c in columns))
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _init_df = loc_vars['_init_df']
 
         return self._replace_func(_init_df, data_arrs, pre_nodes=nodes)
@@ -1034,7 +1034,7 @@ class HiFramesPassImpl(object):
         func_text += "    return hpat.hiframes.api.init_series(hpat.hiframes.api.concat(({})))\n".format(
             arg_names)
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _concat_imp = loc_vars['_concat_imp']
 
         done_cols = {}

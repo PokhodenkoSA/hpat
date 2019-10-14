@@ -2145,7 +2145,7 @@ class DistributedPassImpl(object):
 
         f_text = "def f(s):\n  {}\n  s = hpat.distributed_lower._root_rank_select(s, {})".format(pre_init_val, init_val)
         loc_vars = {}
-        exec(f_text, {}, loc_vars)
+        exec(f_text, {'hpat': hpat}, loc_vars)
         f = loc_vars['f']
 
         f_block = compile_to_numba_ir(f, {'hpat': hpat, 'numba': numba, 'np': np},

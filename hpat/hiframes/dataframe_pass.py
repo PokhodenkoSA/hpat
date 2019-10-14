@@ -430,7 +430,7 @@ class DataFramePassImpl(object):
         func_text += "    return np.stack(({}), 1)\n".format(data_args)
 
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'np': np}, loc_vars)
         f = loc_vars['f']
 
         return self._replace_func(f, data_arrs, pre_nodes=nodes)
@@ -1013,7 +1013,7 @@ class DataFramePassImpl(object):
         func_text += "  return hpat.hiframes.api.init_series(S)\n"
 
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'numba': numba, 'Row': Row}, loc_vars)
         f = loc_vars['f']
 
         f_ir = compile_to_numba_ir(
@@ -1098,7 +1098,7 @@ class DataFramePassImpl(object):
         func_text += "   'max     ' + {}\n".format(max_strs)
 
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'np': np}, loc_vars)
         f = loc_vars['f']
 
         nodes = []
@@ -1173,7 +1173,7 @@ class DataFramePassImpl(object):
             .format(name_consts, col_name_args)
 
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         f = loc_vars['f']
 
         nodes = []
@@ -1198,7 +1198,7 @@ class DataFramePassImpl(object):
             ", ".join(d + '_O' for d in data_args),
             ", ".join("'{}'".format(c) for c in df_typ.columns))
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _head_impl = loc_vars['_head_impl']
 
         nodes = []
@@ -1224,7 +1224,7 @@ class DataFramePassImpl(object):
             ", ".join(d + '_O' for d in data_args),
             ", ".join("'{}'".format(c) for c in df_typ.columns))
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _pct_change_impl = loc_vars['_pct_change_impl']
 
         nodes = []
@@ -1253,7 +1253,7 @@ class DataFramePassImpl(object):
             ", ".join("'{}'".format(c) for c in df_typ.columns))
         func_text += "  return hpat.hiframes.api.init_series(data, index)\n"
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'np': np}, loc_vars)
         _reduce_impl = loc_vars['_reduce_impl']
 
         nodes = []
@@ -1284,7 +1284,7 @@ class DataFramePassImpl(object):
             ", ".join(d + '_O' for d in data_args),
             ", ".join("'{}'".format(c) for c in df_typ.columns))
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _fillna_impl = loc_vars['_fillna_impl']
 
         nodes = []
@@ -1313,7 +1313,7 @@ class DataFramePassImpl(object):
         func_text += "  ({},) = hpat.hiframes.api.dropna(({},), inplace)\n".format(
             out_names, arg_names)
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _dropna_imp = loc_vars['_dropna_imp']
 
         f_block = compile_to_numba_ir(_dropna_imp,
@@ -1359,7 +1359,7 @@ class DataFramePassImpl(object):
             ", ".join(data_args),
             ", ".join("'{}'".format(c) for c in df_typ.columns))
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _reset_index_impl = loc_vars['_reset_index_impl']
 
         nodes = []
@@ -1409,7 +1409,7 @@ class DataFramePassImpl(object):
         func_text = '\n'.join(func_lines)
 
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _isna_impl = loc_vars['_isna_impl']
 
         nodes = []
@@ -1540,7 +1540,7 @@ class DataFramePassImpl(object):
         func_text += "  return hpat.hiframes.pd_dataframe_ext.init_dataframe({}, None, {})\n".format(
             data_args, col_args)
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _init_df = loc_vars['_init_df']
         return self._replace_func(_init_df, in_arrs, pre_nodes=nodes)
 
@@ -1917,7 +1917,7 @@ class DataFramePassImpl(object):
         func_text += "    return hpat.hiframes.api.concat(({}))\n".format(
             arg_names)
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat}, loc_vars)
         _concat_imp = loc_vars['_concat_imp']
 
         out_vars = []
@@ -2238,7 +2238,7 @@ def _gen_init_df(columns):
     func_text += "  return hpat.hiframes.pd_dataframe_ext.init_dataframe({}, None, {})\n".format(
         data_args, ", ".join("'{}'".format(c) for c in columns))
     loc_vars = {}
-    exec(func_text, {}, loc_vars)
+    exec(func_text, {'hpat': hpat}, loc_vars)
     _init_df = loc_vars['_init_df']
 
     return _init_df

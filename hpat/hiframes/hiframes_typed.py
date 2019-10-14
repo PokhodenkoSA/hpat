@@ -519,7 +519,7 @@ class HiFramesTypedPassImpl(object):
             func_text += "  return A\n"
 
             loc_vars = {}
-            exec(func_text, {}, loc_vars)
+            exec(func_text, {'hpat': hpat, 'np': np}, loc_vars)
             _h5_read_impl = loc_vars['_h5_read_impl']
             return self._replace_func(_h5_read_impl, rhs.args)
 
@@ -1070,7 +1070,7 @@ class HiFramesTypedPassImpl(object):
                           ).format(func_name, arg_names)
 
             loc_vars = {}
-            exec(func_text, {}, loc_vars)
+            exec(func_text, {'hpat': hpat}, loc_vars)
             _func_impl = loc_vars['_func_impl']
             return self._replace_func(_func_impl, [data] + rhs.args,
                                       pre_nodes=nodes)
@@ -1250,7 +1250,7 @@ class HiFramesTypedPassImpl(object):
         #func_text += "  return ret\n"
 
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'np': np, 'numba': numba}, loc_vars)
         f = loc_vars['f']
 
         _globals = self.state.func_ir.func_id.func.__globals__
@@ -1442,7 +1442,7 @@ class HiFramesTypedPassImpl(object):
         func_text += "  return hpat.hiframes.api.init_series(S)\n"
 
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'np': np, 'numba': numba}, loc_vars)
         f = loc_vars['f']
 
         _globals = self.state.func_ir.func_id.func.__globals__
@@ -1588,7 +1588,7 @@ class HiFramesTypedPassImpl(object):
         else:
             func_text += '    return hpat.hiframes.api.init_series(S)\n'
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'np': np, 'numba': numba}, loc_vars)
         f = loc_vars['f']
 
         return self._replace_func(f, [arr], pre_nodes=nodes)
@@ -1620,7 +1620,7 @@ class HiFramesTypedPassImpl(object):
         else:
             func_text += '    return hpat.hiframes.api.init_series(S)\n'
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'numba': numba}, loc_vars)
         f = loc_vars['f']
 
         return self._replace_func(f, [arr], pre_nodes=nodes)
@@ -1661,7 +1661,7 @@ class HiFramesTypedPassImpl(object):
             assert(0)
         func_text += '    return S\n'
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'numba': numba}, loc_vars)
         f = loc_vars['f']
 
         return self._replace_func(f, [arr], pre_nodes=nodes)
@@ -1706,7 +1706,7 @@ class HiFramesTypedPassImpl(object):
             func_text += '    return hpat.hiframes.api.init_series(S)\n'
             loc_vars = {}
             # print(func_text)
-            exec(func_text, {}, loc_vars)
+            exec(func_text, {'hpat': hpat, 'numba': numba}, loc_vars)
             f = loc_vars['f']
             return self._replace_func(f, [arr], pre_nodes=nodes,
                                       extra_globals={
@@ -1740,7 +1740,7 @@ class HiFramesTypedPassImpl(object):
         func_text += '        S[i] = len(val)\n'
         func_text += '    return hpat.hiframes.api.init_series(S)\n'
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'np': np, 'numba': numba}, loc_vars)
         f = loc_vars['f']
 
         return self._replace_func(f, [arr], pre_nodes=nodes)
@@ -1929,7 +1929,7 @@ class HiFramesTypedPassImpl(object):
         else:
             func_text += '  return S\n'
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'numba': numba}, loc_vars)
         f = loc_vars['f']
         # print(func_text)
         return self._replace_func(f, [arg1, arg2])
@@ -1979,7 +1979,7 @@ class HiFramesTypedPassImpl(object):
                 func_text += '  return S\n'
 
             loc_vars = {}
-            exec(func_text, {}, loc_vars)
+            exec(func_text, {'hpat': hpat, 'np': np, 'numba': numba}, loc_vars)
             f = loc_vars['f']
             return self._replace_func(f, [arg1, arg2], pre_nodes=nodes)
 
@@ -2042,7 +2042,7 @@ class HiFramesTypedPassImpl(object):
         func_text += '    S[i] = {}(str_arr[i], pat)\n'.format(comp_func)
         func_text += '  return hpat.hiframes.api.init_series(S)\n'
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'np': np, 'numba': numba}, loc_vars)
         f = loc_vars['f']
         return self._replace_func(f, rhs.args)
 
@@ -2142,7 +2142,7 @@ class HiFramesTypedPassImpl(object):
         func_text += "  return ({},)\n".format(", ".join(out_names))
 
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'np': np, 'numba': numba}, loc_vars)
         _dropna_impl = loc_vars['_dropna_impl']
         return self._replace_func(_dropna_impl, rhs.args)
 
@@ -2172,7 +2172,7 @@ class HiFramesTypedPassImpl(object):
         func_text += "                                zero_tup, arr_shape, 0, arr)\n"
 
         loc_vars = {}
-        exec(func_text, {}, loc_vars)
+        exec(func_text, {'hpat': hpat, 'np': np}, loc_vars)
         _h5_write_impl = loc_vars['_h5_write_impl']
         f_block = compile_to_numba_ir(_h5_write_impl,
                                       {'np': np,
