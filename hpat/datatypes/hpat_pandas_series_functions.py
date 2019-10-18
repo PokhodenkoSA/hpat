@@ -431,7 +431,7 @@ def hpat_pandas_series_append(self, to_append):
 @overload_method(SeriesType, 'copy')
 def hpat_pandas_series_copy(self, deep=True):
     """
-    Pandas Series method :meth:`pandas.Series.groupby` implementation.
+    Pandas Series method :meth:`pandas.Series.copy` implementation.
 
     .. only:: developer
 
