@@ -445,6 +445,8 @@ def hpat_pandas_series_copy(self, deep=True):
     deep: :obj:`bool`, default :obj:`True`
         Make a deep copy, including a copy of the data and the indices.
         With deep=False neither the indices nor the data are copied.
+        [HPAT limitations]:
+            - deep=False: shallow copy of index is not supported
 
     Returns
     -------
@@ -453,11 +455,19 @@ def hpat_pandas_series_copy(self, deep=True):
     """
     _func_name = 'Method Series.copy().'
 
-    if isinstance(self, SeriesType):
-        def hpat_pandas_series_copy_impl(self, deep=True):
-            pass
-
-        return hpat_pandas_series_copy_impl
+    if (isinstance(self, SeriesType) and
+        (isinstance(deep, (types.Omitted, types.Boolean)) or deep == True)
+    ):
+        if isinstance(self.index, types.NoneType):
+            def hpat_pandas_series_copy_impl(self, deep=True):
+                return pandas.Series(self._data.copy() if deep else self._data)
+            return hpat_pandas_series_copy_impl
+        else:
+            def hpat_pandas_series_copy_impl(self, deep=True):
+                return pandas.Series(self._data.copy() if deep else self._data,
+                    index=self._index.copy() if deep else self._index
+                )
+            return hpat_pandas_series_copy_impl
 
 
 @overload_method(SeriesType, 'groupby')
