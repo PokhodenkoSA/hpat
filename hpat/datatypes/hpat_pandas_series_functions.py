@@ -461,13 +461,17 @@ def hpat_pandas_series_copy(self, deep=True):
     ):
         if isinstance(self.index, types.NoneType):
             def hpat_pandas_series_copy_impl(self, deep=True):
-                return pandas.Series(self._data.copy() if deep else self._data)
+                if deep:
+                    return pandas.Series(self._data.copy())
+                else:
+                    return pandas.Series(self._data)
             return hpat_pandas_series_copy_impl
         else:
             def hpat_pandas_series_copy_impl(self, deep=True):
-                return pandas.Series(self._data.copy() if deep else self._data,
-                    index=self._index.copy() if deep else self._index
-                )
+                if deep:
+                    return pandas.Series(self._data.copy(), index=self._index.copy())
+                else:
+                    return pandas.Series(self._data, index=self._index.copy())
             return hpat_pandas_series_copy_impl
 
 
