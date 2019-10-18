@@ -51,16 +51,16 @@ def hpat_pandas_series_getitem(self, idx):
     Pandas Series operator :attr:`pandas.Series.get` implementation
 
     **Algorithm**: result = series[idx]
-    
+
     **Test**: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_static_getitem_series1
-    
+
     Parameters
     ----------
     series: :obj:`pandas.Series`
            input series
     idx: :obj:`int`, :obj:`slice` or :obj:`pandas.Series`
         input index
-    
+
     Returns
     -------
     :class:`pandas.Series` or an element of the underneath type
@@ -117,14 +117,14 @@ def hpat_pandas_series_iloc(self):
     Pandas Series operators :attr:`pandas.Series.at`, :attr:`pandas.Series.iat`, :attr:`pandas.Series.iloc`, :attr:`pandas.Series.loc` implementation.
 
     .. only:: developer
-       
+
        Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_iloc2
-    
+
     Parameters
     ----------
     series: :class:`pandas.Series`
            input series
-    
+
     Returns
     -------
     :obj:`pandas.Series`
@@ -328,15 +328,15 @@ def hpat_pandas_series_T(self):
 def hpat_pandas_series_len(self):
     """
     Pandas Series operator :func:`len` implementation
-    
+
     .. only:: developer
-    
+
        Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_len
-    
+
     Parameters
     ----------
     series: :class:`pandas.Series`
-    
+
     Returns
     -------
     :obj:`int`
@@ -396,9 +396,9 @@ def hpat_pandas_series_isin(self, values):
 def hpat_pandas_series_append(self, to_append):
     """
     Pandas Series method :meth:`pandas.Series.append` implementation.
-    
+
     .. only:: developer
-    
+
        Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_append1
 
     Parameters
@@ -413,7 +413,7 @@ def hpat_pandas_series_append(self, to_append):
     Returns
     -------
     :obj:`pandas.Series`
-         returns :obj:`pandas.Series` object 
+         returns :obj:`pandas.Series` object
     """
 
     _func_name = 'Method append().'
@@ -426,6 +426,38 @@ def hpat_pandas_series_append(self, to_append):
         return pandas.Series(self._data + to_append._data)
 
     return hpat_pandas_series_append_impl
+
+
+@overload_method(SeriesType, 'copy')
+def hpat_pandas_series_copy(self, deep=True):
+    """
+    Pandas Series method :meth:`pandas.Series.groupby` implementation.
+
+    .. only:: developer
+
+       Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_attr2
+       Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_copy_str1
+
+    Parameters
+    -----------
+    self: :class:`pandas.Series`
+        input arg
+    deep: :obj:`bool`, default :obj:`True`
+        Make a deep copy, including a copy of the data and the indices.
+        With deep=False neither the indices nor the data are copied.
+
+    Returns
+    -------
+    :obj:`pandas.Series` or :obj:`pandas.DataFrame`
+        Object type matches caller.
+    """
+    _func_name = 'Method Series.copy().'
+
+    if isinstance(self, SeriesType):
+        def hpat_pandas_series_copy_impl(self, deep=True):
+            pass
+
+        return hpat_pandas_series_copy_impl
 
 
 @overload_method(SeriesType, 'groupby')
@@ -506,12 +538,12 @@ def hpat_pandas_series_groupby(
 @overload_method(SeriesType, 'ne')
 def hpat_pandas_series_ne(self, other, level=None, fill_value=None, axis=0):
     """
-    Pandas Series method :meth:`pandas.Series.ne` implementation. 
+    Pandas Series method :meth:`pandas.Series.ne` implementation.
 
     .. only:: developer
-    
+
        Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_op8
-       
+
     Parameters
     ----------
     self: :class:`pandas.Series`
@@ -566,12 +598,12 @@ def hpat_pandas_series_ne(self, other, level=None, fill_value=None, axis=0):
 @overload_method(SeriesType, 'add')
 def hpat_pandas_series_add(self, other, level=None, fill_value=None, axis=0):
     """
-    Pandas Series method :meth:`pandas.Series.add` implementation. 
+    Pandas Series method :meth:`pandas.Series.add` implementation.
 
     .. only:: developer
-    
+
        Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_op5
-       
+
     Parameters
     ----------
     self: :class:`pandas.Series`
@@ -626,12 +658,12 @@ def hpat_pandas_series_add(self, other, level=None, fill_value=None, axis=0):
 @overload_method(SeriesType, 'sub')
 def hpat_pandas_series_sub(self, other, level=None, fill_value=None, axis=0):
     """
-    Pandas Series method :meth:`pandas.Series.sub` implementation. 
+    Pandas Series method :meth:`pandas.Series.sub` implementation.
 
     .. only:: developer
-    
+
        Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_op5
-       
+
     Parameters
     ----------
     self: :class:`pandas.Series`
@@ -812,30 +844,30 @@ def hpat_pandas_series_take(self, indices, axis=0, is_copy=False):
 
     if self.index is not types.none:
         def hpat_pandas_series_take_impl(self, indices, axis=0, is_copy=False):
-            local_data = [self._data[i] for i in indices] 
-            local_index = [self._index[i] for i in indices] 
+            local_data = [self._data[i] for i in indices]
+            local_index = [self._index[i] for i in indices]
 
             return pandas.Series(local_data, local_index)
 
         return hpat_pandas_series_take_impl
     else:
         def hpat_pandas_series_take_noindex_impl(self, indices, axis=0, is_copy=False):
-            local_data = [self._data[i] for i in indices] 
+            local_data = [self._data[i] for i in indices]
 
             return pandas.Series(local_data, indices)
-    
+
         return hpat_pandas_series_take_noindex_impl
 
 
 @overload_method(SeriesType, 'mul')
 def hpat_pandas_series_mul(self, other, level=None, fill_value=None, axis=0):
     """
-    Pandas Series method :meth:`pandas.Series.mul` implementation. 
+    Pandas Series method :meth:`pandas.Series.mul` implementation.
 
     .. only:: developer
-    
+
        Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_op5
-       
+
     Parameters
     ----------
     self: :class:`pandas.Series`
@@ -891,12 +923,12 @@ def hpat_pandas_series_mul(self, other, level=None, fill_value=None, axis=0):
 @overload_method(SeriesType, 'truediv')
 def hpat_pandas_series_div(self, other, level=None, fill_value=None, axis=0):
     """
-    Pandas Series method :meth:`pandas.Series.div` and :meth:`pandas.Series.truediv` implementation. 
+    Pandas Series method :meth:`pandas.Series.div` and :meth:`pandas.Series.truediv` implementation.
 
     .. only:: developer
-    
+
        Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_op5
-       
+
     Parameters
     ----------
     self: :class:`pandas.Series`
@@ -951,12 +983,12 @@ def hpat_pandas_series_div(self, other, level=None, fill_value=None, axis=0):
 @overload_method(SeriesType, 'floordiv')
 def hpat_pandas_series_floordiv(self, other, level=None, fill_value=None, axis=0):
     """
-    Pandas Series method :meth:`pandas.Series.floordiv` implementation. 
+    Pandas Series method :meth:`pandas.Series.floordiv` implementation.
 
     .. only:: developer
-    
+
        Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_op5
-       
+
     Parameters
     ----------
     self: :class:`pandas.Series`
@@ -1640,7 +1672,7 @@ def hpat_pandas_series_unique(self):
 
             Note: Can't use Numpy due to StringArrayType has no ravel() for noPython mode.
             Also, NotImplementedError: unicode_type cannot be represented as a Numpy dtype
-            
+
             Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_unique_str
             '''
 
@@ -1652,7 +1684,7 @@ def hpat_pandas_series_unique(self):
     def hpat_pandas_series_unique_impl(self):
         '''
         Returns sorted unique elements of an array
-        
+
         Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_unique
         '''
 
@@ -1665,7 +1697,7 @@ def hpat_pandas_series_unique(self):
 def hpat_pandas_series_nunique(self, dropna=True):
     """
     Pandas Series method :meth:`pandas.Series.nunique` implementation.
-    
+
     Note: Unsupported mixed numeric and string data
 
     .. only:: developer
@@ -1690,7 +1722,7 @@ def hpat_pandas_series_nunique(self, dropna=True):
         raise TypingError('{} The object must be a pandas.series. Given: {}'.format(_func_name, self))
 
     if isinstance(self.data, StringArrayType):
- 
+
         def hpat_pandas_series_nunique_str_impl(self, dropna=True):
             """
             It is better to merge with Numeric branch
@@ -1701,7 +1733,7 @@ def hpat_pandas_series_nunique(self, dropna=True):
 
             str_set = set(self._data)
             return len(str_set)
- 
+
         return hpat_pandas_series_nunique_str_impl
 
     def hpat_pandas_series_nunique_impl(self, dropna=True):
