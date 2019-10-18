@@ -435,8 +435,9 @@ def hpat_pandas_series_copy(self, deep=True):
 
     .. only:: developer
 
-       Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_attr2
        Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_copy_str1
+       Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_copy_int1
+       Test: python -m hpat.runtests hpat.tests.test_series.TestSeries.test_series_copy_deep
 
     Parameters
     -----------
