@@ -403,7 +403,7 @@ class style(Command):
     _result_marker = "Result:"
     _project_directory_excluded = ['build', '.git']
 
-    _c_formatter = 'clang-format-6.0'
+    _c_formatter = 'clang-format'
     _c_formatter_install_msg = 'pip install clang'
     _c_formatter_command_line = [_c_formatter, '-style=file']
     _c_file_extensions = ['.h', '.c', '.hpp', '.cpp']
