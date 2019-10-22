@@ -332,7 +332,7 @@ class TestSeries(unittest.TestCase):
             with self.subTest(S=S):
                 for deep in (True, False):
                     with self.subTest(deep=deep):
-                        actual   = hpat_func(S, deep)
+                        actual = hpat_func(S, deep)
                         expected = test_impl(S, deep)
 
                         pd.testing.assert_series_equal(actual, expected)
@@ -503,6 +503,7 @@ class TestSeries(unittest.TestCase):
            converts series of strings to series of integers
         '''
         import numba
+
         def test_impl(A):
             return A.astype(np.int32)
         hpat_func = hpat.jit(test_impl)
@@ -1187,7 +1188,7 @@ class TestSeries(unittest.TestCase):
         hpat_func = hpat.jit(test_impl)
 
         S = pd.Series([np.nan, 2., 3.])
-        self.assertEqual(np.isnan(hpat_func(S)),np.isnan(test_impl(S)))
+        self.assertEqual(np.isnan(hpat_func(S)), np.isnan(test_impl(S)))
 
     @unittest.skipIf(not hpat.config.config_pipeline_hpat_default, "Series.sum() operator + is not implemented yet for Numba")
     def test_series_sum2(self):
@@ -1304,7 +1305,6 @@ class TestSeries(unittest.TestCase):
                     self.assertEqual(np.isnan(actual), np.isnan(expected))
                 else:
                     self.assertEqual(actual, expected)
-
 
     def test_series_var1(self):
         def test_impl(S):
