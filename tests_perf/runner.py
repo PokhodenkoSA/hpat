@@ -155,7 +155,7 @@ def run_benchmark(benchmark):
         samples_json = Path(temp_dir) / f'{bench_file_name}.json'
         cmd = [EXECUTABLE, SCRIPT, '--bench-pickle', str(bench_pickle), '--res-json', str(samples_json)]
         logger.info('Running "%s"', subprocess.list2cmdline(cmd))
-        subprocess.run(cmd, check=True, shell=True)
+        subprocess.run(cmd, check=True)
         with samples_json.open(encoding='utf-8') as fd:
             return json.load(fd)
 
