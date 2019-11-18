@@ -509,7 +509,7 @@ sdc_build_commands.update({'style': style})
 
 setup(name='sdc',
       version=versioneer.get_version(),
-      description='compiling Python code for clusters',
+      description='Scalable Dataframe Compiler',
       long_description=readme(),
       classifiers=[
           "Development Status :: 2 - Pre-Alpha",
