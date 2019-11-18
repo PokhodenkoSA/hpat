@@ -26,7 +26,7 @@
 
 
 """
-Plugin to run HPAT performance tests under Conda environment via Airspeed Velocity.
+Plugin to run SDC performance tests under Conda environment via Airspeed Velocity.
 """
 import multiprocessing
 import os
@@ -36,7 +36,7 @@ from asv.console import log
 from asv.plugins.conda import Conda, _find_conda
 
 
-class HPATConda(Conda):
+class SDCConda(Conda):
     tool_name = 'hpat_conda'
 
     @property

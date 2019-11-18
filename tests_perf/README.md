@@ -1,13 +1,13 @@
-# HPAT Performance Tests
+# SDC Performance Tests
 There are 2 ways to run performance testing.
 The first one is via the custom runner `runner.py`. The second one is through ASV.
 
 ## 1. Custom run
 #### Preparing:
-1. Manually create Conda environment with installed required packages for HPAT,
+1. Manually create Conda environment with installed required packages for SDC,
 activate the environment
 2. Install `jinja2` for report generating: `conda install jinja2`
-3. Build HPAT via `build_hpat.py` or manually:<br />
+3. Build SDC via `build_hpat.py` or manually:<br />
 `python build_hpat.py --env-dir <activated_env_path> --build-dir <hpat_repo_path>`
 
 #### Running
@@ -20,15 +20,15 @@ activate the environment
 #### Pipeline:
 Provided by `asv.conf.json` file.
 1. Create Conda environment with defined dependencies
-2. Pull HPAT source code
-3. Uninstall previous HPAT build
-4. Build HPAT from source
-5. Install HPAT
+2. Pull SDC source code
+3. Uninstall previous SDC build
+4. Build SDC from source
+5. Install SDC
 7. Run performance tests
 
 
 #### Running
-##### Deactivate HPAT. Activate environment base.
+##### Deactivate SDC. Activate environment base.
 ##### Install Airspeed Velocity in Anaconda Prompt:
 `conda install -c conda-forge asv`
 

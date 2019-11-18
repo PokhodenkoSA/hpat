@@ -26,7 +26,7 @@
 
 
 """
-Build HPAT from source
+Build SDC from source
 Usage:
 python build_sdc.py --env-dir <conda_hpat_env_dir> --build-dir <hpat_source_dir>
 """
@@ -86,7 +86,7 @@ def run_cmd(cmd, cwd=None, env=None):
 
 def _build_win(cwd, env_dir):
     """
-    Build HPAT on Windows via the following commands:
+    Build SDC on Windows via the following commands:
         set INCLUDE=%INCLUDE%;%CONDA_PREFIX%\\Library\\include
         set LIB=%LIB%;%CONDA_PREFIX%\\Library\\lib
         "%I_MPI_ROOT%"\\intel64\\bin\\mpivars.bat
@@ -121,7 +121,7 @@ def _build_win(cwd, env_dir):
 
 def _build_lin(cwd, env_dir):
     """
-    Build HPAT on Linux via the following commands:
+    Build SDC on Linux via the following commands:
         set HDF5_DIR=%CONDA_PREFIX%
         python setup.py develop
 
@@ -136,7 +136,7 @@ def _build_lin(cwd, env_dir):
 
 
 def get_builder():
-    """Get HPAT builder according to system OS"""
+    """Get SDC builder according to system OS"""
     system_platform = platform.system()
     if system_platform == 'Windows':
         return _build_win
@@ -146,13 +146,13 @@ def get_builder():
     raise ValueError(f'Unknown OS: {system_platform}')
 
 
-class HPATBuilder:
+class SDCBuilder:
     def __init__(self, cwd, env_dir):
         self.cwd = cwd
         self.env_dir = env_dir
 
     def build(self):
-        """Build HPAT via obtained builder"""
+        """Build SDC via obtained builder"""
         builder = get_builder()
         return builder(self.cwd, self.env_dir)
 
@@ -171,7 +171,7 @@ def main():
     args = parse_args()
     setup_logging()
 
-    hpat_builder = HPATBuilder(cwd=args.build_dir, env_dir=args.env_dir)
+    hpat_builder = SDCBuilder(cwd=args.build_dir, env_dir=args.env_dir)
     hpat_builder.build()
 
 
