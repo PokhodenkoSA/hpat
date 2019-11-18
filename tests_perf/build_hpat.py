@@ -28,7 +28,7 @@
 """
 Build SDC from source
 Usage:
-python build_sdc.py --env-dir <conda_hpat_env_dir> --build-dir <hpat_source_dir>
+python build_sdc.py --env-dir <conda_sdc_env_dir> --build-dir <sdc_source_dir>
 """
 import argparse
 import logging
@@ -171,8 +171,8 @@ def main():
     args = parse_args()
     setup_logging()
 
-    hpat_builder = SDCBuilder(cwd=args.build_dir, env_dir=args.env_dir)
-    hpat_builder.build()
+    sdc_builder = SDCBuilder(cwd=args.build_dir, env_dir=args.env_dir)
+    sdc_builder.build()
 
 
 if __name__ == "__main__":
