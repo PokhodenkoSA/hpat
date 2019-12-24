@@ -29,7 +29,6 @@ import time
 
 import pandas
 import pyarrow.csv
-import sdc
 
 from sdc.tests.tests_perf.test_perf_base import TestBase
 from sdc.tests.tests_perf.test_perf_utils import calc_compilation, get_times
@@ -51,6 +50,7 @@ def make_func(file_name):
 def make_func_pyarrow(file_name):
     """Create function implemented via PyArrow."""
     def _function():
+        import sdc
         start = time.time()
         df = sdc.io.csv_ext.pandas_read_csv(file_name)
         return time.time() - start, df
@@ -70,14 +70,14 @@ class TestPandasReadCSV(TestBase):
         # compilation time
         record["compile_results"] = calc_compilation(pyfunc, *args, **kwargs)
 
-        sdc_func = sdc.jit(pyfunc)
+        cfunc = self.jit(pyfunc)
 
         # Warming up
-        sdc_func(*args, **kwargs)
+        cfunc(*args, **kwargs)
 
         # execution and boxing time
         record["test_results"], record["boxing_results"] = \
-            get_times(sdc_func, *args, **kwargs)
+            get_times(cfunc, *args, **kwargs)
 
     def _test_python(self, pyfunc, record, *args, **kwargs):
         record["test_results"], _ = \

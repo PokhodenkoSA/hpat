@@ -2,9 +2,10 @@ import os
 import unittest
 
 from sdc.tests.tests_perf.test_perf_utils import *
+from sdc.tests.test_base import TestCase
 
 
-class TestBase(unittest.TestCase):
+class TestBase(TestCase):
     iter_number = 5
     results_class = TestResults
 
