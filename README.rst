@@ -22,9 +22,7 @@ Intel SDC's documentation can be found `here <https://intelpython.github.io/sdc-
 Intel SDC uses special Numba build based on ``0.48.0`` tag for build and run.
 Required Numba version can be installed from ``intel/label/beta`` channel from the Anaconda Cloud.
 
-.. note::
-
-    For maximum performance and stability please use numba from ``intel/label/beta`` channel.
+.. note:: For maximum performance and stability please use numba from ``intel/label/beta`` channel.
 
 Installing Binary Packages (conda and wheel)
 ----------------------------------
