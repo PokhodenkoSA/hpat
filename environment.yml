@@ -18,5 +18,7 @@ dependencies:
   - pytest
   - pytest-xdist
   - sphinx
+
+  - pip
   - pip:
     - sphinxcontrib-programoutput
