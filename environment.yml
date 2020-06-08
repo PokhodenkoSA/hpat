@@ -1,0 +1,22 @@
+channels:
+  - numba
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.7
+  - numba=0.49.1
+  - pandas=0.25.3
+  - pyarrow=0.17.0
+  - scipy=1.4.1
+  - mpich=3.3.2
+  - gcc_linux-64=8.2.0
+  - gxx_linux-64=8.2.0
+  - tbb-devel=2020.1
+  - tbb4py=2020.1
+
+  - pycodestyle
+  - pytest
+  - pytest-xdist
+  - sphinx
+  - pip:
+    - sphinxcontrib-programoutput
